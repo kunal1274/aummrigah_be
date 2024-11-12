@@ -46,4 +46,29 @@ const startServer = async () => {
     process.exit(1);
   }
 };
-startServer();
+
+(async () => {
+  try {
+    await connectToDb();
+    AumMrigahApp.listen(PORT + 1, () => {
+      console.log(
+        `The Node server has been now running at ${PORT + 1} for testing `
+      );
+    });
+  } catch (error) {
+    console.error(`Server is unable to start due to some error : ${error}`);
+    process.exit(1);
+  }
+})();
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  process.exit(1);
+});
+//startServer();
+
+export default AumMrigahApp;
