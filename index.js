@@ -23,7 +23,11 @@ const logger = (req, res, next) => {
 };
 
 AumMrigahApp.get("/", (req, res) => {
-  res.status(200).send({ message: `Server is up at ${PORT}` });
+  res
+    .status(200)
+    .send({
+      message: `Server is up at ${PORT} and running on vercel local port at 3000`,
+    });
 });
 
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
