@@ -1,5 +1,6 @@
 import expressAumMrigah from "express";
 import { config } from "dotenv";
+import corsAumMrigah from "cors";
 import connectToDb from "./database/mongodb.js";
 import { customerRouter } from "./routes/customer.routes.js";
 
@@ -10,6 +11,28 @@ console.log("This is working as expected");
 const AumMrigahApp = expressAumMrigah();
 
 const PORT = process.env.PORTNUM || 2020;
+
+//cors
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://www.postman.com",
+  "https://jiodriversprod1.vercel.app",
+]; // Add your client origin here
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true, // This allows cookies to be sent
+};
+
+AumMrigahApp.use(corsAumMrigah(corsOptions));
 
 AumMrigahApp.listen(PORT, () => {
   console.log(`The Node server is running at port ${PORT}`);
@@ -23,11 +46,9 @@ const logger = (req, res, next) => {
 };
 
 AumMrigahApp.get("/", (req, res) => {
-  res
-    .status(200)
-    .send({
-      message: `Server is up at ${PORT} and running on vercel local port at 3000`,
-    });
+  res.status(200).send({
+    message: `Server is up at ${PORT} and running on vercel local port at 3000`,
+  });
 });
 
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
