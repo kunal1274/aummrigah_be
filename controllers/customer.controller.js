@@ -40,16 +40,67 @@ export const getCustomers = async (req, res) => {
   }
 };
 
+export const getCustomer = async (req, res) => {
+  const { customerId } = req.params;
+  try {
+    const dbResponse = await CustomerModel.findById(customerId);
+    if (!dbResponse) {
+      return res.status(404).send({
+        status: "failure",
+        message: `The customer ${customerId} has been deleted or does not exist `,
+      });
+    }
+    return res.status(200).send({
+      status: "success",
+      message: `The customer record ${customerId} has been fetched successfully.`,
+      data: dbResponse,
+    });
+  } catch (error) {
+    ce(`Error fetching customer with ID ${customerId}:`, error);
+    return res.status(500).send({
+      status: "failure",
+      message: `The error has been caught while fetching the customer record `,
+      error: error.message || error,
+    });
+  }
+};
+
 export const updateCustomer = async (request, response) => {
   const { customerId } = request.params;
   const customerBodyToUpdate = request.body;
   try {
-    const data = await UserModel.updateOne(
+    const dbResponse = await CustomerModel.updateOne(
       { _id: customerId },
       { $set: customerBodyToUpdate }
     );
-    res.status(200).send(data);
+    return response.status(200).send({
+      status: "success",
+      message: `The customer ${customerId} has been updated successfully.`,
+      data: dbResponse,
+    });
   } catch (error) {
-    res.status(400).send(error);
+    return response.status(400).send({
+      status: "failure",
+      message: `There is an error while updating the customer record ${customerId}`,
+      error: error,
+    });
+  }
+};
+
+export const deleteCustomer = async (req, res) => {
+  const { customerId } = req.params;
+  try {
+    const dbResponse = await CustomerModel.findByIdAndDelete(customerId);
+    return res.status(200).send({
+      status: "success",
+      message: `The customer ${customerId} has been deleted successfully`,
+      data: dbResponse,
+    });
+  } catch (error) {
+    return res.status(400).send({
+      status: "failure",
+      message: `There has been error while deleting the customer id ${customerId}`,
+      error: error,
+    });
   }
 };
