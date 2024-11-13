@@ -39,3 +39,17 @@ export const getCustomers = async (req, res) => {
     });
   }
 };
+
+export const updateCustomer = async (request, response) => {
+  const { customerId } = request.params;
+  const customerBodyToUpdate = request.body;
+  try {
+    const data = await UserModel.updateOne(
+      { _id: customerId },
+      { $set: customerBodyToUpdate }
+    );
+    res.status(200).send(data);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+};
