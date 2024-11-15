@@ -13,12 +13,20 @@ const customerSchema = new Schema({
   },
   contactNum: {
     type: String,
-    required: true,
-    minLength: [
+    required: [true, "Contact number is required."],
+    unique: true,
+    minlength: [
       10,
-      `The phone number should be without country code and min. 10 chars`,
+      "The phone number should be exactly 10 digits without country code.",
     ],
-    maxLength: [10, `The phone number cannot be greater than 10 chars.`],
+    maxlength: [10, "The phone number should be exactly 10 digits."],
+    validate: {
+      validator: function (v) {
+        return /^\d{10}$/.test(v); // Only allows exactly 10 digits
+      },
+      message:
+        "Contact number must be a 10-digit number without any letters or special characters.",
+    },
   },
   currency: {
     type: String,
