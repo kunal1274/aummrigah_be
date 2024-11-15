@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import corsAumMrigah from "cors";
 import connectToDb from "./database/mongodb.js";
 import { customerRouter } from "./routes/customer.routes.js";
+import { itemRouter } from "./routes/item.routes.js";
 
 // dotenv config to run
 config();
@@ -52,6 +53,7 @@ AumMrigahApp.get("/", (req, res) => {
 });
 
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
+AumMrigahApp.use("/fms/api/v0/item", itemRouter);
 
 // final route
 AumMrigahApp.use((req, res) => {
