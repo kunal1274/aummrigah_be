@@ -16,6 +16,7 @@ const PORT = process.env.PORTNUM || 2020;
 //cors
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://namami-fe.vercel.app",
   "https://www.postman.com",
   "https://jiodriversprod1.vercel.app",
 ]; // Add your client origin here
