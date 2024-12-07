@@ -21,7 +21,11 @@ const allowedOriginsV0 = [
   "https://jiodriversprod1.vercel.app",
 ]; // Add your client origin here
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+const allowedOriginsV1 = process.env.ALLOWED_ORIGINS?.split(",") || [];
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : [];
 
 const corsOptionsV0 = {
   origin: (origin, callback) => {
@@ -67,6 +71,10 @@ AumMrigahApp.get("/", (req, res) => {
   res.status(200).send({
     message: `Server is up at ${PORT} and running on vercel local port at 3000. d4.2 > `,
   });
+});
+
+AumMrigahApp.get("/env", (req, res) => {
+  res.json({ allowedOrigins });
 });
 
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
