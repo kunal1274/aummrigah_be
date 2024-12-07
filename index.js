@@ -23,7 +23,7 @@ const allowedOriginsV0 = [
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
 
-const corsOptions = {
+const corsOptionsV0 = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, etc.)
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
@@ -35,6 +35,19 @@ const corsOptions = {
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true, // This allows cookies to be sent
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (for Postman, mobile apps)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  credentials: true, // Allow cookies
 };
 
 AumMrigahApp.use(corsAumMrigah(corsOptions));
