@@ -14,23 +14,26 @@ const AumMrigahApp = expressAumMrigah();
 const PORT = process.env.PORTNUM || 2020;
 
 //cors
-const allowedOrigins = [
+const allowedOriginsV0 = [
   "http://localhost:5173",
   "https://namami-fe.vercel.app",
   "https://www.postman.com",
   "https://jiodriversprod1.vercel.app",
 ]; // Add your client origin here
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true, // This allows cookies to be sent
 };
 
