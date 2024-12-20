@@ -10,6 +10,7 @@ const connectToDb = async () => {
       //useUnifiedTopology: true, // Ensures Mongoose uses the new connection engine
       serverSelectionTimeoutMS: 5000, // Reduces connection timeout for faster error reporting
       socketTimeoutMS: 45000, // Keeps the connection alive for up to 45 seconds
+      sanitizeFilter: true, // to do the filter on query
     };
 
     const { connection } = await mongoose.connect(uriWithEnv, options);

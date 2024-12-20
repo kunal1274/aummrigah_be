@@ -4,18 +4,49 @@ import corsAumMrigah from "cors";
 import connectToDb from "./database/mongodb.js";
 import { customerRouter } from "./routes/customer.routes.js";
 import { itemRouter } from "./routes/item.routes.js";
+import mongoSanitize from "express-mongo-sanitize";
+import helmet from "helmet";
+import xss from "xss-clean";
+import rateLimit from "express-rate-limit";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+// Calculate __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsBasePath = path.join(__dirname, "uploads");
 
 // dotenv config to run
 config();
 
+// Set up rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes.",
+});
+
 console.log("This is working as expected");
 const AumMrigahApp = expressAumMrigah();
+
+// Middleware to sanitize inputs
+AumMrigahApp.use(mongoSanitize());
+
+// Use Helmet middleware
+AumMrigahApp.use(helmet());
+
+// Middleware to clean user inputs
+AumMrigahApp.use(xss());
+
+AumMrigahApp.use(limiter);
 
 const PORT = process.env.PORTNUM || 2020;
 
 //cors
 const allowedOriginsV0 = [
   "http://localhost:5173",
+  "http://localhost:5174",
   "https://namami-fe.vercel.app",
   "https://www.postman.com",
   "https://jiodriversprod1.vercel.app",
@@ -79,6 +110,57 @@ AumMrigahApp.get("/env", (req, res) => {
 
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
 AumMrigahApp.use("/fms/api/v0/item", itemRouter);
+
+// // Serve uploaded files
+// AumMrigahApp.use(
+//   "/uploads/items",
+//   express.static(path.join(__dirname, "uploads/items"))
+// );
+
+// Dynamic way --
+
+// Serve static files dynamically based on the subfolder
+AumMrigahApp.use("/uploads/:folder", (req, res, next) => {
+  const folder = req.params.folder; // this will be entered by the code or user
+  const folderPath = path.join(uploadsBasePath, folder);
+
+  // Check if the folder exists to avoid serving unauthorized paths
+  if (!fs.existsSync(folderPath)) {
+    return res.status(404).json({ message: "Folder not found" });
+  }
+
+  expressAumMrigah.static(folderPath)(req, res, next);
+});
+
+AumMrigahApp.get("/uploads/items/:filename", (req, res) => {
+  const filePath = path.join(__dirname, "uploads/items", req.params.filename);
+
+  // Check if the file exists
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error("File not found:", filePath);
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    // Set Content-Disposition header for proper filename
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${req.params.filename}"`
+    );
+
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.sendFile(filePath);
+  });
+
+  // Check if the file exists
+  // fs.access(filePath, fs.constants.F_OK, (err) => {
+  //   if (err) {
+  //     console.error("File not found:", filePath);
+  //     return res.status(404).json({ message: "File not found" });
+  //   }
+  //   res.sendFile(filePath);
+  // });
+});
 
 // final route
 AumMrigahApp.use((req, res) => {

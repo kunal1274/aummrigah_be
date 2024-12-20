@@ -4,8 +4,10 @@ import {
   getItem,
   getItems,
   updateItem,
+  uploadFilesAgainstItem,
 } from "../controllers/item.controller.js";
 import expressItem from "express";
+import { upload } from "../middleware/uploadConfig.js";
 
 const itemRouter = expressItem.Router();
 
@@ -14,5 +16,11 @@ itemRouter.get("/", getItems);
 itemRouter.get("/:itemId", getItem);
 itemRouter.put("/:itemId", updateItem);
 itemRouter.delete("/:itemId", deleteItem);
+// Upload files for an item
+itemRouter.post(
+  "/:itemId/upload",
+  upload.array("files", 10),
+  uploadFilesAgainstItem
+);
 
 export { itemRouter };
