@@ -1,4 +1,4 @@
-import { ItemModel } from "../models/item.model.js";
+import { ItemModel, winstonLogger } from "../models/item.model.js";
 import ce from "../utility/ce.js";
 import cl from "../utility/cl.js";
 import mongoose from "mongoose";
@@ -14,7 +14,7 @@ const logError = (context, error) => {
 export const createItem = async (req, res) => {
   const itemBody = req.body;
   try {
-    if (!itemBody.code) {
+    if (!itemBody.itemNum || !itemBody.name) {
       return res.status(422).send({
         status: "failure",
         message: " Item code and Item Name are the required fields.",
@@ -166,5 +166,42 @@ export const deleteItem = async (req, res) => {
       message: `There has been error while deleting the item id ${itemId}`,
       error: error,
     });
+  }
+};
+
+export const uploadFilesAgainstItem = async (req, res) => {
+  try {
+    const itemId = req.params.itemId;
+    const files = req.files;
+    winstonLogger.info(req.params.id);
+    winstonLogger.info(req.files);
+    winstonLogger.info(req.body);
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    // Prepare file metadata
+    const uploadedFiles = files.map((file) => ({
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      fileUrl: `/uploads/items/${file.filename}`, // Path to access the file
+    }));
+
+    // Update the item with the file metadata
+    const item = await ItemModel.findByIdAndUpdate(
+      itemId,
+      { $push: { files: { $each: uploadedFiles } } }, // Add files to the `files` array
+      { new: true }
+    );
+
+    if (!item) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.status(200).json({ message: "Files uploaded successfully", item });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

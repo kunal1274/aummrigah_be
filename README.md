@@ -39,3 +39,7 @@ Locally via cli
 ```bash
 vercel dev
 ```
+
+## item model
+
+![alt text](image-7.png)
