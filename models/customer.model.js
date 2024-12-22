@@ -146,7 +146,7 @@ const customerSchema = new Schema({
 const version0Handler = async (doc, next) => {
   try {
     // Increment counter
-    const dbResponseNewCounter = await CustomerCounterModel.findByIdAndUpdate(
+    const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
       { _id: "customerCode" },
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
@@ -175,11 +175,14 @@ const version1Handler = async (doc, next) => {
     await doc.validate();
 
     // Increment counter within a transaction
-    const dbResponseNewCounter = await CustomerCounterModel.findByIdAndUpdate(
+    const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
       { _id: "customerCode" },
       { $inc: { seq: 1 } },
       { new: true, upsert: true, session }
     );
+
+    console.log("Counter increment result:", dbResponseNewCounter);
+    console.log("Transaction status:", session.inTransaction());
 
     if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
       throw new Error("Failed to generate customer code");
