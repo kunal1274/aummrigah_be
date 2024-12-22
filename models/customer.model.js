@@ -172,6 +172,8 @@ const version1Handler = async (doc, next) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
+    await doc.validate();
+
     // Increment counter within a transaction
     const dbResponseNewCounter = await CustomerCounterModel.findByIdAndUpdate(
       { _id: "customerCode" },
