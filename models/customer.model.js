@@ -1,5 +1,6 @@
 import { model, Schema } from "mongoose";
 import { CustomerCounterModel } from "./counter.model.js";
+import mongoose from "mongoose";
 
 const customerSchema = new Schema({
   code: {
@@ -58,7 +59,7 @@ const customerSchema = new Schema({
 });
 
 customerSchema.pre("save", async function (next) {
-  const version = 0;
+  const version = 1;
   const doc = this; // means whoever is calling and here customer Schema is calling or customer model
   switch (version) {
     case 0:
@@ -93,6 +94,45 @@ customerSchema.pre("save", async function (next) {
       }
       break;
 
+    case 1:
+      if (doc.isNew) {
+        try {
+          // find and increment the counter for the customer code
+          const session = await mongoose.startSession();
+          session.startTransaction();
+
+          const dbResponseNewCounter =
+            await CustomerCounterModel.findByIdAndUpdate(
+              { _id: "customerCode" },
+              { $inc: { seq: 1 } },
+              { new: true, upsert: true, session }
+            );
+          console.log(dbResponseNewCounter, session);
+          // Ensure the seq field exists
+          if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+            throw new Error("Failed to generate customer code");
+          }
+          // Generate with padding of 5 digits
+          const seqNumber = dbResponseNewCounter.seq
+            .toString()
+            .padStart(6, "0");
+
+          doc.code = `CUST_${seqNumber}`;
+
+          await session.commitTransaction();
+          session.endSession();
+
+          next();
+        } catch (error) {
+          await session.abortTransaction();
+          session.endSession();
+
+          next(error);
+        }
+      } else {
+        next();
+      }
+      break;
     default:
       cl(
         `The error is from the customerSchema.pre save while generating the customer code.`
