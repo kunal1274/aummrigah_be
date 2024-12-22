@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 // Calculate __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -165,6 +166,9 @@ AumMrigahApp.get("/uploads/items/:filename", (req, res) => {
   //   res.sendFile(filePath);
   // });
 });
+
+// Error Handling Middleware
+AumMrigahApp.use(errorHandler);
 
 // final route
 AumMrigahApp.use((req, res) => {
