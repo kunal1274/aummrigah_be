@@ -58,85 +58,171 @@ const customerSchema = new Schema({
   },
 });
 
+// customerSchema.pre("save", async function (next) {
+//   const version = 1;
+//   const doc = this; // means whoever is calling and here customer Schema is calling or customer model
+//   switch (version) {
+//     case 0:
+//       if (doc.isNew) {
+//         try {
+//           // find and increment the counter for the customer code
+
+//           const dbResponseNewCounter =
+//             await CustomerCounterModel.findByIdAndUpdate(
+//               { _id: "customerCode" },
+//               { $inc: { seq: 1 } },
+//               { new: true, upsert: true }
+//             );
+//           console.log(dbResponseNewCounter);
+//           // Ensure the seq field exists
+//           if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+//             throw new Error("Failed to generate customer code");
+//           }
+//           // Generate with padding of 5 digits
+//           const seqNumber = dbResponseNewCounter.seq
+//             .toString()
+//             .padStart(6, "0");
+
+//           doc.code = `CUST_${seqNumber}`;
+
+//           next();
+//         } catch (error) {
+//           next(error);
+//         }
+//       } else {
+//         next();
+//       }
+//       break;
+
+//     case 1:
+//       if (doc.isNew) {
+//         try {
+//           // find and increment the counter for the customer code
+//           const session = await mongoose.startSession();
+//           session.startTransaction();
+
+//           const dbResponseNewCounter =
+//             await CustomerCounterModel.findByIdAndUpdate(
+//               { _id: "customerCode" },
+//               { $inc: { seq: 1 } },
+//               { new: true, upsert: true, session }
+//             );
+//           console.log(dbResponseNewCounter, session);
+//           // Ensure the seq field exists
+//           if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+//             throw new Error("Failed to generate customer code");
+//           }
+//           // Generate with padding of 5 digits
+//           const seqNumber = dbResponseNewCounter.seq
+//             .toString()
+//             .padStart(6, "0");
+
+//           doc.code = `CUST_${seqNumber}`;
+
+//           await session.commitTransaction();
+//           session.endSession();
+
+//           next();
+//         } catch (error) {
+//           await session.abortTransaction();
+//           session.endSession();
+
+//           next(error);
+//         }
+//       } else {
+//         next();
+//       }
+//       break;
+//     default:
+//       cl(
+//         `The error is from the customerSchema.pre save while generating the customer code.`
+//       );
+//       break;
+//   }
+// });
+
+// Function for version 0 logic
+
+const version0Handler = async (doc, next) => {
+  try {
+    // Increment counter
+    const dbResponseNewCounter = await CustomerCounterModel.findByIdAndUpdate(
+      { _id: "customerCode" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+      throw new Error("Failed to generate customer code");
+    }
+
+    // Generate customer code
+    const seqNumber = dbResponseNewCounter.seq.toString().padStart(6, "0");
+    doc.code = `CUST_${seqNumber}`;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Function for version 1 logic with transactions
+const version1Handler = async (doc, next) => {
+  let session;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+
+    // Increment counter within a transaction
+    const dbResponseNewCounter = await CustomerCounterModel.findByIdAndUpdate(
+      { _id: "customerCode" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true, session }
+    );
+
+    if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+      throw new Error("Failed to generate customer code");
+    }
+
+    // Generate customer code
+    const seqNumber = dbResponseNewCounter.seq.toString().padStart(6, "0");
+    doc.code = `CUST_${seqNumber}`;
+
+    await session.commitTransaction();
+    next();
+  } catch (error) {
+    if (session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
+    next(error);
+  } finally {
+    if (session) {
+      session.endSession();
+    }
+  }
+};
+
+// Main pre-save hook
 customerSchema.pre("save", async function (next) {
-  const version = 1;
-  const doc = this; // means whoever is calling and here customer Schema is calling or customer model
+  const version = 1; // Change this to switch between versions
+  const doc = this;
+
+  if (!doc.isNew) {
+    return next(); // Skip processing for existing documents
+  }
+
   switch (version) {
     case 0:
-      if (doc.isNew) {
-        try {
-          // find and increment the counter for the customer code
-
-          const dbResponseNewCounter =
-            await CustomerCounterModel.findByIdAndUpdate(
-              { _id: "customerCode" },
-              { $inc: { seq: 1 } },
-              { new: true, upsert: true }
-            );
-          console.log(dbResponseNewCounter);
-          // Ensure the seq field exists
-          if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
-            throw new Error("Failed to generate customer code");
-          }
-          // Generate with padding of 5 digits
-          const seqNumber = dbResponseNewCounter.seq
-            .toString()
-            .padStart(6, "0");
-
-          doc.code = `CUST_${seqNumber}`;
-
-          next();
-        } catch (error) {
-          next(error);
-        }
-      } else {
-        next();
-      }
+      await version0Handler(doc, next);
       break;
-
     case 1:
-      if (doc.isNew) {
-        try {
-          // find and increment the counter for the customer code
-          const session = await mongoose.startSession();
-          session.startTransaction();
-
-          const dbResponseNewCounter =
-            await CustomerCounterModel.findByIdAndUpdate(
-              { _id: "customerCode" },
-              { $inc: { seq: 1 } },
-              { new: true, upsert: true, session }
-            );
-          console.log(dbResponseNewCounter, session);
-          // Ensure the seq field exists
-          if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
-            throw new Error("Failed to generate customer code");
-          }
-          // Generate with padding of 5 digits
-          const seqNumber = dbResponseNewCounter.seq
-            .toString()
-            .padStart(6, "0");
-
-          doc.code = `CUST_${seqNumber}`;
-
-          await session.commitTransaction();
-          session.endSession();
-
-          next();
-        } catch (error) {
-          await session.abortTransaction();
-          session.endSession();
-
-          next(error);
-        }
-      } else {
-        next();
-      }
+      await version1Handler(doc, next);
       break;
     default:
-      cl(
-        `The error is from the customerSchema.pre save while generating the customer code.`
+      console.error(
+        "Invalid version specified for customerSchema pre-save hook."
       );
+      next(new Error("Invalid version specified."));
       break;
   }
 });
