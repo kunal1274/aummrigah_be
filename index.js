@@ -55,8 +55,12 @@ const allowedOriginsV0 = [
 const allowedOriginsV1 = process.env.ALLOWED_ORIGINS?.split(",") || [];
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+  ? process.env.ALLOWED_ORIGINS.split(",").map((ele) => {
+      return ele.trim();
+    })
   : [];
+
+console.log("Allowed Origins", process.env.ALLOWED_ORIGINS);
 
 const corsOptionsV0 = {
   origin: (origin, callback) => {
