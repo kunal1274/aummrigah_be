@@ -311,15 +311,15 @@ const version1Handler = async (doc, next) => {
 // });
 
 customerSchema.pre("save", async function (next) {
-  let session;
+  //let session;
 
   if (!this.isNew) {
     return next();
   }
 
   try {
-    session = await mongoose.startSession();
-    session.startTransaction();
+    //session = await mongoose.startSession();
+    //session.startTransaction();
 
     // Validate the document (schema-level validation)
     await this.validate();
@@ -350,15 +350,15 @@ customerSchema.pre("save", async function (next) {
     this.code = `CUST_${seqNumber}`;
 
     // Commit transaction
-    await session.commitTransaction();
+    //await session.commitTransaction();
     next();
   } catch (error) {
     console.error("Error caught during transaction:", error.stack);
 
-    if (session && session.inTransaction()) {
-      await session.abortTransaction();
-      console.log("Transaction aborted.");
-    }
+    // if (session && session.inTransaction()) {
+    //   await session.abortTransaction();
+    //   console.log("Transaction aborted.");
+    // }
 
     // Decrement the counter in case of failure
     try {
@@ -376,10 +376,11 @@ customerSchema.pre("save", async function (next) {
 
     next(error);
   } finally {
-    if (session) {
-      session.endSession();
-      console.log("Session ended.");
-    }
+    // if (session) {
+    //   //session.endSession();
+    //   console.log("Session ended.");
+    // }
+    console.log("Finally customer counter closed");
   }
 });
 
