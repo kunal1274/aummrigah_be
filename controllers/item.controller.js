@@ -2,6 +2,7 @@ import { ItemModel, winstonLogger } from "../models/item.model.js";
 import ce from "../utility/ce.js";
 import cl from "../utility/cl.js";
 import mongoose from "mongoose";
+import { ItemCounterModel } from "../models/counter.model.js";
 
 // Helper function for error logging
 const logError = (context, error) => {
@@ -155,16 +156,59 @@ export const deleteItem = async (req, res) => {
   const { itemId } = req.params;
   try {
     const dbResponse = await ItemModel.findByIdAndDelete(itemId);
+    if (!dbResponse) {
+      return res.status(404).send({
+        status: "failure",
+        message: `No item found with id ${itemId}`,
+      });
+    }
     return res.status(200).send({
       status: "success",
-      message: `The item ${itemId} has been deleted successfully`,
+      message: `The item ${itemId} has been deleted successfully.`,
       data: dbResponse,
     });
   } catch (error) {
-    return res.status(400).send({
+    console.error("Error deleting item:", error);
+    return res.status(500).send({
       status: "failure",
-      message: `There has been error while deleting the item id ${itemId}`,
-      error: error,
+      message: `There was an error while deleting the item with id ${itemId}.`,
+      error: error.message,
+    });
+  }
+};
+
+// Delete all items and reset sequence
+export const deleteAllItems = async (req, res) => {
+  try {
+    // Delete all items
+    const deleteResponse = await ItemModel.deleteMany({});
+    console.log(`Deleted ${deleteResponse.deletedCount} items.`);
+
+    // Reset the counter for item code
+    const resetCounter = await ItemCounterModel.findOneAndUpdate(
+      { _id: "itemCode" },
+      { seq: 0 }, // Reset sequence to 0
+      { new: true, upsert: true } // Create document if it doesn't exist
+    );
+
+    return res.status(200).send({
+      status: "success",
+      message:
+        "All items have been deleted, and the sequence has been reset to 1.",
+      data: {
+        deletedCount: deleteResponse.deletedCount,
+        counter: resetCounter,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error while deleting all items and resetting sequence:",
+      error
+    );
+    return res.status(500).send({
+      status: "failure",
+      message: "Error while deleting all items or resetting the sequence.",
+      error: error.message,
     });
   }
 };

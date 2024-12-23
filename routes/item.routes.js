@@ -1,5 +1,6 @@
 import {
   createItem,
+  deleteAllItems,
   deleteItem,
   getItem,
   getItems,
@@ -16,6 +17,7 @@ itemRouter.get("/", getItems);
 itemRouter.get("/:itemId", getItem);
 itemRouter.put("/:itemId", updateItem);
 itemRouter.delete("/:itemId", deleteItem);
+itemRouter.delete("/", deleteAllItems);
 // Upload files for an item
 itemRouter.post(
   "/:itemId/upload",

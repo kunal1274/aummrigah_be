@@ -85,6 +85,57 @@ const itemSchema = new Schema(
   }
 );
 
+// itemSchema.pre("save", async function (next) {
+//   const version = 0;
+//   const doc = this; // means whoever is calling and here item Schema is calling or customer model
+//   switch (version) {
+//     case 0:
+//       if (doc.isNew) {
+//         try {
+//           // find and increment the counter for the customer code
+
+//           // const dbResponseNewCounter =
+//           //   await CustomerCounterModel.findByIdAndUpdate(
+//           //     { _id: "customerCode" },
+//           //     { $inc: { seq: 1 } },
+//           //     { new: true, upsert: true }
+//           //   );
+//           const dbResponseNewCounter = await ItemCounterModel.findByIdAndUpdate(
+//             { _id: "itemCode" },
+//             { $inc: { seq: 1 } },
+//             { new: true, upsert: true }
+//           );
+//           console.log(dbResponseNewCounter);
+//           // Replace console.log with logger.info or logger.error
+//           winstonLogger.info(dbResponseNewCounter);
+//           // Ensure the seq field exists
+//           if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+//             throw new Error("Failed to generate item code");
+//           }
+//           // Generate with padding of 5 digits
+//           const seqNumber = dbResponseNewCounter.seq
+//             .toString()
+//             .padStart(6, "0");
+
+//           doc.code = `ITEM_${seqNumber}`;
+
+//           next();
+//         } catch (error) {
+//           next(error);
+//         }
+//       } else {
+//         next();
+//       }
+//       break;
+
+//     default:
+//       cl(
+//         `The error is from the itemSchema.pre save while generating the item code.`
+//       );
+//       break;
+//   }
+// });
+
 itemSchema.pre("save", async function (next) {
   if (!this.isNew) {
     return next();
@@ -94,19 +145,14 @@ itemSchema.pre("save", async function (next) {
     // Validate the document (schema-level validation)
     await this.validate();
 
-    // Check for duplicate itemNum (case-insensitive)
-    const existingItem = await ItemModel.findOne({
-      itemNum: this.itemNum,
-    }).collation({
-      locale: "en",
-      strength: 2, // Case-insensitive collation
-    });
+    // // Check for duplicates in the database
+    // const existingItem = await ItemModel.findOne({
+    //   itemNum: this.itemNum,
+    // });
 
-    if (existingItem) {
-      throw new Error(
-        `An item with this itemNum already exists: ${this.itemNum}`
-      );
-    }
+    // if (existingItem) {
+    //   throw new Error(`Duplicate item number: ${this.itemNum}`);
+    // }
 
     // Increment counter for item code
     const dbResponseNewCounter = await ItemCounterModel.findOneAndUpdate(
@@ -129,15 +175,19 @@ itemSchema.pre("save", async function (next) {
   } catch (error) {
     console.error("Error caught during item save:", error.stack);
 
-    // // Decrement the counter in case of failure
-    // try {
-    //   await ItemCounterModel.findByIdAndUpdate(
-    //     { _id: "itemCode" },
-    //     { $inc: { seq: -1 } }
-    //   );
-    // } catch (decrementError) {
-    //   console.error("Error during counter decrement:", decrementError.stack);
-    // }
+    // Decrement the counter in case of failure
+    try {
+      //const isCounterIncremented =
+      // error.message && !error.message.startsWith("Duplicate item number");
+      //if (isCounterIncremented) {
+      await ItemCounterModel.findByIdAndUpdate(
+        { _id: "itemCode" },
+        { $inc: { seq: -1 } }
+      );
+      //}
+    } catch (decrementError) {
+      console.error("Error during counter decrement:", decrementError.stack);
+    }
 
     next(error);
   } finally {
@@ -148,5 +198,10 @@ itemSchema.pre("save", async function (next) {
 // Apply toJSON to include getters
 
 itemSchema.set("toJSON", { getters: true });
+
+// Define indexes
+itemSchema.index({ code: 1 }); // Index for code
+itemSchema.index({ itemNum: 1 }); // Index for itemNum
+//itemSchema.index({ code: 1, itemNum: 1 }); // Compound index for code and itemNum
 
 export const ItemModel = model("Items", itemSchema);
