@@ -30,6 +30,8 @@ const limiter = rateLimit({
 
 console.log("This is working as expected");
 const AumMrigahApp = expressAumMrigah();
+// Set up 'trust proxy' to handle reverse proxies
+AumMrigahApp.set("trust proxy", 1); // Trust the first proxy (e.g., Vercel)
 
 // Middleware to sanitize inputs
 AumMrigahApp.use(mongoSanitize());
