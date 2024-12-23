@@ -243,6 +243,73 @@ const version1Handler = async (doc, next) => {
 //   }
 // });
 
+// customerSchema.pre("save", async function (next) {
+//   let session;
+
+//   if (!this.isNew) {
+//     return next();
+//   }
+
+//   try {
+//     session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     // Validate the document
+//     try {
+//       await this.validate();
+//     } catch (validationError) {
+//       console.error("Validation error:", validationError.message);
+//       throw validationError;
+//     }
+
+//     // Increment counter within a transaction
+//     const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
+//       { _id: "customerCode" },
+//       { $inc: { seq: 1 } },
+//       { new: true, upsert: true, session }
+//     );
+
+//     console.log("Counter increment result:", dbResponseNewCounter);
+//     console.log("Session details", session);
+
+//     if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+//       throw new Error("Failed to generate customer code");
+//     }
+
+//     // Generate customer code
+//     const seqNumber = dbResponseNewCounter.seq.toString().padStart(6, "0");
+//     this.code = `CUST_${seqNumber}`;
+
+//     // Commit transaction
+//     await session.commitTransaction();
+//     next();
+//   } catch (error) {
+//     console.error("Error caught during transaction:", error.stack);
+
+//     if (session && session.inTransaction()) {
+//       await session.abortTransaction();
+//       console.log("session aborted");
+//     }
+
+//     // Decrement the counter in case of failure
+//     try {
+//       await CustomerCounterModel.findByIdAndUpdate(
+//         { _id: "customerCode" },
+//         { $inc: { seq: -1 } }
+//       );
+//     } catch (decrementError) {
+//       console.error("Error during counter decrement:", decrementError.stack);
+//     }
+
+//     next(error);
+//   } finally {
+//     if (session) {
+//       session.endSession();
+//     }
+//     console.log("Session ended.");
+//   }
+// });
+
 customerSchema.pre("save", async function (next) {
   let session;
 
@@ -254,15 +321,18 @@ customerSchema.pre("save", async function (next) {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    // Validate the document
-    try {
-      await this.validate();
-    } catch (validationError) {
-      console.error("Validation error:", validationError.message);
-      throw validationError;
+    // Validate the document (schema-level validation)
+    await this.validate();
+
+    // Check for duplicates in the database
+    const existingCustomer = await CustomerModel.findOne({
+      contactNum: this.contactNum,
+    }).session(session);
+    if (existingCustomer) {
+      throw new Error(`Duplicate contact number: ${this.contactNum}`);
     }
 
-    // Increment counter within a transaction
+    // Increment counter within the transaction
     const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
       { _id: "customerCode" },
       { $inc: { seq: 1 } },
@@ -270,7 +340,6 @@ customerSchema.pre("save", async function (next) {
     );
 
     console.log("Counter increment result:", dbResponseNewCounter);
-    console.log("Session details", session);
 
     if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
       throw new Error("Failed to generate customer code");
@@ -288,15 +357,19 @@ customerSchema.pre("save", async function (next) {
 
     if (session && session.inTransaction()) {
       await session.abortTransaction();
-      console.log("session aborted");
+      console.log("Transaction aborted.");
     }
 
     // Decrement the counter in case of failure
     try {
-      await CustomerCounterModel.findByIdAndUpdate(
-        { _id: "customerCode" },
-        { $inc: { seq: -1 } }
-      );
+      const isCounterIncremented =
+        error.message && !error.message.startsWith("Duplicate contact number");
+      if (isCounterIncremented) {
+        await CustomerCounterModel.findByIdAndUpdate(
+          { _id: "customerCode" },
+          { $inc: { seq: -1 } }
+        );
+      }
     } catch (decrementError) {
       console.error("Error during counter decrement:", decrementError.stack);
     }
@@ -305,8 +378,8 @@ customerSchema.pre("save", async function (next) {
   } finally {
     if (session) {
       session.endSession();
+      console.log("Session ended.");
     }
-    console.log("Session ended.");
   }
 });
 
