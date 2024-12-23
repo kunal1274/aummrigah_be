@@ -172,11 +172,11 @@ const version1Handler = async (doc, next) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    try {
-      doc.validate();
-    } catch (error) {
-      throw new Error("Validation Error", error);
-    }
+    //try {
+    await doc.validate();
+    //} catch (error) {
+    //throw new Error("Validation Error", error);
+    //}
 
     // Increment counter within a transaction
     const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
@@ -201,7 +201,11 @@ const version1Handler = async (doc, next) => {
   } catch (error) {
     if (session) {
       await session.abortTransaction();
-      session.endSession();
+      // Decrement the counter in case of failure
+      await CustomerCounterModel.findByIdAndUpdate(
+        { _id: "customerCode" },
+        { $inc: { seq: -1 } }
+      );
     }
     next(error);
   } finally {
