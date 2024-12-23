@@ -197,8 +197,10 @@ const version1Handler = async (doc, next) => {
     doc.code = `CUST_${seqNumber}`;
 
     await session.commitTransaction();
+
     next();
   } catch (error) {
+    console.log("Error caught while session commit", error);
     if (session) {
       await session.abortTransaction();
       // Decrement the counter in case of failure
@@ -209,6 +211,7 @@ const version1Handler = async (doc, next) => {
     }
     next(error);
   } finally {
+    console.log("Finally close", session, "ending");
     if (session) {
       session.endSession();
     }
