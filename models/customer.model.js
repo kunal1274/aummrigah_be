@@ -219,27 +219,94 @@ const version1Handler = async (doc, next) => {
 };
 
 // Main pre-save hook
-customerSchema.pre("save", async function (next) {
-  const version = 1; // Change this to switch between versions
-  const doc = this;
+// customerSchema.pre("save", async function (next) {
+//   const version = 1; // Change this to switch between versions
+//   const doc = this;
 
-  if (!doc.isNew) {
-    return next(); // Skip processing for existing documents
+//   if (!doc.isNew) {
+//     return next(); // Skip processing for existing documents
+//   }
+
+//   switch (version) {
+//     case 0:
+//       await version0Handler(doc, next);
+//       break;
+//     case 1:
+//       await version1Handler(doc, next);
+//       break;
+//     default:
+//       console.error(
+//         "Invalid version specified for customerSchema pre-save hook."
+//       );
+//       next(new Error("Invalid version specified."));
+//       break;
+//   }
+// });
+
+customerSchema.pre("save", async function (next) {
+  let session;
+
+  if (!this.isNew) {
+    return next();
   }
 
-  switch (version) {
-    case 0:
-      await version0Handler(doc, next);
-      break;
-    case 1:
-      await version1Handler(doc, next);
-      break;
-    default:
-      console.error(
-        "Invalid version specified for customerSchema pre-save hook."
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+
+    // Validate the document
+    try {
+      await this.validate();
+    } catch (validationError) {
+      console.error("Validation error:", validationError.message);
+      throw validationError;
+    }
+
+    // Increment counter within a transaction
+    const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
+      { _id: "customerCode" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true, session }
+    );
+
+    console.log("Counter increment result:", dbResponseNewCounter);
+    console.log("Session details", session);
+
+    if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
+      throw new Error("Failed to generate customer code");
+    }
+
+    // Generate customer code
+    const seqNumber = dbResponseNewCounter.seq.toString().padStart(6, "0");
+    this.code = `CUST_${seqNumber}`;
+
+    // Commit transaction
+    await session.commitTransaction();
+    next();
+  } catch (error) {
+    console.error("Error caught during transaction:", error.stack);
+
+    if (session && session.inTransaction()) {
+      await session.abortTransaction();
+      console.log("session aborted");
+    }
+
+    // Decrement the counter in case of failure
+    try {
+      await CustomerCounterModel.findByIdAndUpdate(
+        { _id: "customerCode" },
+        { $inc: { seq: -1 } }
       );
-      next(new Error("Invalid version specified."));
-      break;
+    } catch (decrementError) {
+      console.error("Error during counter decrement:", decrementError.stack);
+    }
+
+    next(error);
+  } finally {
+    if (session) {
+      session.endSession();
+    }
+    console.log("Session ended.");
   }
 });
 
