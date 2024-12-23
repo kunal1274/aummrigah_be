@@ -2,6 +2,7 @@ import { CustomerModel } from "../models/customer.model.js";
 import ce from "../utility/ce.js";
 import cl from "../utility/cl.js";
 import mongoose from "mongoose";
+import { CustomerCounterModel } from "../models/counter.model.js";
 
 // Helper function for error logging
 const logError = (context, error) => {
@@ -164,6 +165,43 @@ export const deleteCustomer = async (req, res) => {
       status: "failure",
       message: `There has been error while deleting the customer id ${customerId}`,
       error: error,
+    });
+  }
+};
+
+// Delete all customers and reset sequence
+export const deleteAllCustomers = async (req, res) => {
+  try {
+    // Delete all customers
+    const deleteResponse = await CustomerModel.deleteMany({});
+    console.log(`Deleted ${deleteResponse.deletedCount} customers.`);
+
+    // Reset the counter for customer code
+
+    const resetCounter = await CustomerCounterModel.findOneAndUpdate(
+      { _id: "customerCode" },
+      { seq: 0 }, // Reset sequence to 0
+      { new: true, upsert: true } // Create document if it doesn't exist
+    );
+
+    return res.status(200).send({
+      status: "success",
+      message:
+        "All customers have been deleted, and the sequence has been reset to 1.",
+      data: {
+        deletedCount: deleteResponse.deletedCount,
+        counter: resetCounter,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error while deleting all customers and resetting sequence:",
+      error
+    );
+    return res.status(500).send({
+      status: "failure",
+      message: "Error while deleting all customers or resetting the sequence.",
+      error: error.message,
     });
   }
 };
