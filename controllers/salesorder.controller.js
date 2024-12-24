@@ -1,4 +1,4 @@
-import { SalesOrderModel } from "../models/salesOrder.model.js";
+import { SalesOrderModel } from "../models/salesorders.model.js";
 import mongoose from "mongoose";
 import { logError } from "../utility/logError.js";
 import { SalesOrderCounterModel } from "../models/counter.model.js";
@@ -166,6 +166,14 @@ export const updateSalesOrderById = async (req, res) => {
   const updatedData = req.body;
 
   try {
+    // Check for required fields
+    if (!updatedData.customer || !updatedData.item) {
+      return res.status(422).send({
+        status: "failure",
+        message: "Customer and Item are required fields.",
+      });
+    }
+
     const updatedSalesOrder = await SalesOrderModel.findByIdAndUpdate(
       salesOrderId,
       updatedData,
