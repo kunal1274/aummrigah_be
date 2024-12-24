@@ -120,7 +120,7 @@ AumMrigahApp.get("/env", (req, res) => {
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
 AumMrigahApp.use("/fms/api/v0/item", itemRouter);
 AumMrigahApp.use("/fms/api/v0/clients", clientRouter);
-AumMrigahApp.use("/fms/api/v0/salesOrders", salesOrderRouter);
+AumMrigahApp.use("/fms/api/v0/salesorders", salesOrderRouter);
 
 // // Serve uploaded files
 // AumMrigahApp.use(

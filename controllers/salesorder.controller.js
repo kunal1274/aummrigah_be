@@ -1,6 +1,9 @@
 import { SalesOrderModel } from "../models/salesOrder.model.js";
 import mongoose from "mongoose";
 import { logError } from "../utility/logError.js";
+import { SalesOrderCounterModel } from "../models/counter.model.js";
+import { CustomerModel } from "../models/customer.model.js";
+import { ItemModel } from "../models/item.model.js";
 
 export const createSalesOrder = async (req, res) => {
   const salesOrderBody = req.body;
@@ -11,6 +14,26 @@ export const createSalesOrder = async (req, res) => {
       return res.status(422).send({
         status: "failure",
         message: "Customer and Item are required fields.",
+      });
+    }
+
+    // Validate existence of the customer
+    const customerExists = await CustomerModel.findById(
+      salesOrderBody.customer
+    );
+    if (!customerExists) {
+      return res.status(404).send({
+        status: "failure",
+        message: `Customer with ID ${salesOrderBody.customer} does not exist.`,
+      });
+    }
+
+    // Validate existence of the item
+    const itemExists = await ItemModel.findById(salesOrderBody.item);
+    if (!itemExists) {
+      return res.status(404).send({
+        status: "failure",
+        message: `Item with ID ${salesOrderBody.item} does not exist.`,
       });
     }
 
@@ -125,6 +148,7 @@ export const getAllSalesOrders = async (req, res) => {
     return res.status(200).send({
       status: "success",
       message: "Sales orders retrieved successfully.",
+      count: salesOrders.length,
       data: salesOrders,
     });
   } catch (error) {
@@ -214,9 +238,15 @@ export const deleteSalesOrderById = async (req, res) => {
 
 export const deleteAllSalesOrders = async (req, res) => {
   try {
-    const deletedCount = await SalesOrderModel.deleteMany({});
+    const deletedResponse = await SalesOrderModel.deleteMany({});
 
-    if (deletedCount.deletedCount === 0) {
+    const resetCounter = await SalesOrderCounterModel.findOneAndUpdate(
+      { _id: "salesOrderCode" },
+      { seq: 0 }, // Reset sequence to 0
+      { new: true, upsert: true } // Create document if it doesn't exist
+    );
+
+    if (deletedResponse.deletedCount === 0) {
       return res.status(404).send({
         status: "failure",
         message: "No sales orders found to delete.",
@@ -225,7 +255,11 @@ export const deleteAllSalesOrders = async (req, res) => {
 
     return res.status(200).send({
       status: "success",
-      message: `${deletedCount.deletedCount} sales orders deleted successfully.`,
+      message: `${deletedResponse.deletedCount} sales orders deleted successfully.`,
+      data: {
+        deletedCount: deletedResponse.deletedCount,
+        counter: resetCounter,
+      },
     });
   } catch (error) {
     logError("Delete All Sales Orders", error);

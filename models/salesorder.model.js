@@ -32,7 +32,7 @@ const salesOrderSchema1C1I = new Schema(
       required: true,
       default: 0.0,
       set: function (v) {
-        return item.price || Math.round(v * 100) / 100;
+        return Math.round(v * 100) / 100;
       },
     },
     discount: {
