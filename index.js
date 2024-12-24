@@ -12,6 +12,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { clientRouter } from "./routes/client.routes.js";
+import { salesOrderRouter } from "./routes/salesorders.routes.js";
 
 // Calculate __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -117,6 +119,8 @@ AumMrigahApp.get("/env", (req, res) => {
 
 AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
 AumMrigahApp.use("/fms/api/v0/item", itemRouter);
+AumMrigahApp.use("/fms/api/v0/clients", clientRouter);
+AumMrigahApp.use("/fms/api/v0/salesorders", salesOrderRouter);
 
 // // Serve uploaded files
 // AumMrigahApp.use(
