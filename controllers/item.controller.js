@@ -127,6 +127,13 @@ export const updateItem = async (request, response) => {
   const { itemId } = request.params;
   const itemBodyToUpdate = request.body;
   try {
+    const itemExists = await ItemModel.findById(itemId);
+    if (!itemExists) {
+      return res.status(404).send({
+        status: "failure",
+        message: `The item ${itemId} has been deleted or does not exist `,
+      });
+    }
     const dbResponse = await ItemModel.updateOne(
       { _id: itemId },
       { $set: itemBodyToUpdate }

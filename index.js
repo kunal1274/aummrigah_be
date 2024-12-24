@@ -14,6 +14,8 @@ import fs from "fs";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { clientRouter } from "./routes/client.routes.js";
 import { salesOrderRouter } from "./routes/salesorders.routes.js";
+import { vendorRouter } from "./routes/vendor.routes.js";
+import { purchaseOrderRouter } from "./routes/purchaseorders.routes.js";
 
 // Calculate __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -117,10 +119,12 @@ AumMrigahApp.get("/env", (req, res) => {
   res.json({ allowedOrigins });
 });
 
-AumMrigahApp.use("/fms/api/v0/customer", customerRouter);
-AumMrigahApp.use("/fms/api/v0/item", itemRouter);
+AumMrigahApp.use("/fms/api/v0/customers", customerRouter);
+AumMrigahApp.use("/fms/api/v0/items", itemRouter);
 AumMrigahApp.use("/fms/api/v0/clients", clientRouter);
 AumMrigahApp.use("/fms/api/v0/salesorders", salesOrderRouter);
+AumMrigahApp.use("/fms/api/v0/vendors", vendorRouter);
+AumMrigahApp.use("/fms/api/v0/purchaseorders", purchaseOrderRouter);
 
 // // Serve uploaded files
 // AumMrigahApp.use(
