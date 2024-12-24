@@ -56,14 +56,18 @@ const salesOrderSchema1C1I = new Schema(
     status: {
       type: String,
       required: true,
-      enum: [
-        "Draft",
-        "Cancelled",
-        "Confirmed",
-        "Shipped",
-        "Delivered",
-        "Invoiced",
-      ],
+      enum: {
+        values: [
+          "Draft",
+          "Cancelled",
+          "Confirmed",
+          "Shipped",
+          "Delivered",
+          "Invoiced",
+        ],
+        message:
+          "{VALUE} is not a valid status . Use among these only'Draft','Cancelled','Confirmed','Shipped'.'Delivered','Invoiced'.",
+      },
       default: "Draft",
     },
     createdAt: {
