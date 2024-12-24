@@ -17,6 +17,19 @@ export const CustomerCounterModel = model(
   customerCounterSchema
 );
 
+const vendorCounterSchema = new Schema({
+  _id: {
+    type: String,
+    required: true,
+  },
+  seq: {
+    type: Number,
+    default: 0,
+  },
+});
+
+export const VendorCounterModel = model("VendorCounters", vendorCounterSchema);
+
 const itemCounterSchema = new Schema({
   _id: {
     type: String,
@@ -44,4 +57,20 @@ const SalesOrderCounterSchema = new Schema({
 export const SalesOrderCounterModel = model(
   "SalesOrderCounter",
   SalesOrderCounterSchema
+);
+
+const purchaseOrderCounterSchema = new Schema({
+  _id: {
+    type: String,
+    required: true,
+  },
+  seq: {
+    type: Number,
+    default: 0,
+  },
+});
+
+export const PurchaseOrderCounterModel = model(
+  "PurchaseOrderCounter",
+  purchaseOrderCounterSchema
 );

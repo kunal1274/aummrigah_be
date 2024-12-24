@@ -112,7 +112,7 @@ itemSchema.pre("save", async function (next) {
 
     // Generate item code
     const seqNumber = dbResponseNewCounter.seq.toString().padStart(6, "0");
-    this.code = `ITEM_${seqNumber}`;
+    this.code = `I_${seqNumber}`;
 
     next();
   } catch (error) {

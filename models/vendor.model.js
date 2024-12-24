@@ -1,8 +1,8 @@
 import { model, Schema } from "mongoose";
-import { CustomerCounterModel } from "./counter.model.js";
+import { VendorCounterModel } from "./counter.model.js";
 import mongoose from "mongoose";
 
-const customerSchema = new Schema(
+const vendorSchema = new Schema(
   {
     code: {
       type: String,
@@ -70,7 +70,7 @@ const customerSchema = new Schema(
   }
 );
 
-customerSchema.pre("save", async function (next) {
+vendorSchema.pre("save", async function (next) {
   if (!this.isNew) {
     return next();
   }
@@ -80,16 +80,16 @@ customerSchema.pre("save", async function (next) {
     await this.validate();
 
     // Check for duplicates in the database
-    const existingCustomer = await CustomerModel.findOne({
+    const existingVendor = await VendorModel.findOne({
       contactNum: this.contactNum,
     }); //.session(session);
-    if (existingCustomer) {
+    if (existingVendor) {
       throw new Error(`Duplicate contact number: ${this.contactNum}`);
     }
 
     // Increment counter within the transaction
-    const dbResponseNewCounter = await CustomerCounterModel.findOneAndUpdate(
-      { _id: "customerCode" },
+    const dbResponseNewCounter = await VendorCounterModel.findOneAndUpdate(
+      { _id: "vendorCode" },
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
       //{ new: true, upsert: true, session }
@@ -98,12 +98,12 @@ customerSchema.pre("save", async function (next) {
     console.log("Counter increment result:", dbResponseNewCounter);
 
     if (!dbResponseNewCounter || dbResponseNewCounter.seq === undefined) {
-      throw new Error("Failed to generate customer code");
+      throw new Error("Failed to generate vendor code");
     }
 
-    // Generate customer code
+    // Generate vendor code
     const seqNumber = dbResponseNewCounter.seq.toString().padStart(6, "0");
-    this.code = `C_${seqNumber}`;
+    this.code = `V_${seqNumber}`;
 
     next();
   } catch (error) {
@@ -114,8 +114,8 @@ customerSchema.pre("save", async function (next) {
       const isCounterIncremented =
         error.message && !error.message.startsWith("Duplicate contact number");
       if (isCounterIncremented) {
-        await CustomerCounterModel.findByIdAndUpdate(
-          { _id: "customerCode" },
+        await VendorCounterModel.findByIdAndUpdate(
+          { _id: "vendorCode" },
           { $inc: { seq: -1 } }
         );
       }
@@ -125,8 +125,8 @@ customerSchema.pre("save", async function (next) {
 
     next(error);
   } finally {
-    console.log("Finally customer counter closed");
+    console.log("Finally vendor counter closed");
   }
 });
 
-export const CustomerModel = model("Customers", customerSchema);
+export const VendorModel = model("Vendors", vendorSchema);
