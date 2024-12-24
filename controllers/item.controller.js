@@ -1,16 +1,9 @@
-import { ItemModel, winstonLogger } from "../models/item.model.js";
+import { ItemModel } from "../models/item.model.js";
 import ce from "../utility/ce.js";
 import cl from "../utility/cl.js";
 import mongoose from "mongoose";
 import { ItemCounterModel } from "../models/counter.model.js";
-
-// Helper function for error logging
-const logError = (context, error) => {
-  console.error(`[${new Date().toISOString()}] ${context} - Error:`, {
-    message: error.message || error,
-    stack: error.stack,
-  });
-};
+import { winstonLogger, logError } from "../utility/logError.js";
 
 export const createItem = async (req, res) => {
   const itemBody = req.body;

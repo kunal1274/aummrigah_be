@@ -1,17 +1,6 @@
 import { model, Schema } from "mongoose";
 import { ItemCounterModel } from "./counter.model.js";
 
-import winston from "winston";
-
-export const winstonLogger = winston.createLogger({
-  level: "info",
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: "error.log", level: "error" }),
-  ],
-});
-
 const itemSchema = new Schema(
   {
     code: {
@@ -128,16 +117,6 @@ itemSchema.pre("save", async function (next) {
     next();
   } catch (error) {
     console.error("Error caught during item save:", error.stack);
-
-    // // Decrement the counter in case of failure
-    // try {
-    //   await ItemCounterModel.findByIdAndUpdate(
-    //     { _id: "itemCode" },
-    //     { $inc: { seq: -1 } }
-    //   );
-    // } catch (decrementError) {
-    //   console.error("Error during counter decrement:", decrementError.stack);
-    // }
 
     next(error);
   } finally {
