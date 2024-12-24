@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, mongoose } from "mongoose";
 import { SalesOrderCounterModel } from "./counter.model.js";
 
 // Sales Order Schema
@@ -108,6 +108,7 @@ salesOrderSchema1C1I.pre("save", async function (next) {
 });
 
 // Populate References on Find
+
 salesOrderSchema1C1I.pre(/^find/, function (next) {
   this.populate("customer", "name contactNum").populate(
     "item",
@@ -122,10 +123,50 @@ salesOrderSchema1C1I.pre("validate", function (next) {
   next();
 });
 
+salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
+  const update = this.getUpdate();
+
+  try {
+    // Validate existence of the customer
+    if (update.customer) {
+      const customerExists = await mongoose
+        .model("Customers")
+        .findById(update.customer);
+      if (!customerExists) {
+        throw new Error(`Customer with ID ${update.customer} does not exist.`);
+      }
+    }
+
+    // Validate existence of the item
+    if (update.item) {
+      const itemExists = await mongoose.model("Items").findById(update.item);
+      if (!itemExists) {
+        throw new Error(`Item with ID ${update.item} does not exist.`);
+      }
+    }
+
+    // Recalculate line amount if relevant fields are being updated
+    if (update.quantity || update.price || update.discount || update.charges) {
+      const quantity = update.quantity || this.getQuery().quantity || 1;
+      const price = update.price || this.getQuery().price || 0;
+      const discount = update.discount || this.getQuery().discount || 0;
+      const charges = update.charges || this.getQuery().charges || 0;
+
+      update.lineAmt = quantity * price - discount + charges;
+      this.setUpdate(update);
+    }
+
+    next();
+  } catch (error) {
+    next(error); // Pass error to the next middleware/controller
+  }
+});
+
 salesOrderSchema1C1I.index({ orderNum: 1, customer: 1, item: 1 });
 
 export const SalesOrderModel = model("SalesOrder", salesOrderSchema1C1I);
 
+/*
 // Sales Order Schema with multiple items
 const salesOrderSchemaV2 = new Schema(
   {
@@ -200,3 +241,4 @@ salesOrderSchemaV2.pre("save", async function (next) {
 });
 
 export const SalesOrderModelV2 = model("SalesOrderV2", salesOrderSchemaV2);
+*/

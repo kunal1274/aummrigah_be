@@ -1,3 +1,4 @@
+/*
 import { OneTimeCustomerModel } from "../models/oneTimeCustomer.model.js";
 import { SalesOrderModel } from "../models/salesOrder.model.js";
 import { ItemModel } from "../models/item.model.js";
@@ -140,3 +141,4 @@ export const createOneTimeOrderMultipleItems = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+*/
