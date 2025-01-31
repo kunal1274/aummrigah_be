@@ -1,5 +1,5 @@
-import { Schema, model, mongoose } from "mongoose";
-import { SalesOrderCounterModel } from "./counter.model.js";
+import mongoose, { Schema, model } from "mongoose";
+import { SalesOrderCounterModel } from "./counter.1_0_0.model.js";
 
 // Sales Order Schema
 const salesOrderSchema1C1I = new Schema(
@@ -186,4 +186,5 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
 
 salesOrderSchema1C1I.index({ orderNum: 1, customer: 1, item: 1 });
 
-export const SalesOrderModel = model("SalesOrder", salesOrderSchema1C1I);
+export const SalesOrderModel =
+  mongoose.models.SalesOrdersV1 || model("SalesOrdersV1", salesOrderSchema1C1I);

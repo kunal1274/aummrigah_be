@@ -1,5 +1,6 @@
 import { model, Schema } from "mongoose";
-import { CustomerCounterModel } from "./counter.model.js";
+import { CustomerCounterModel } from "./counter.muuSHakaH.model.js";
+import mongoose from "mongoose";
 
 const customerSchema = new Schema(
   {

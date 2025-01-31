@@ -1,5 +1,5 @@
-import { model, Schema } from "mongoose";
-import { CustomerCounterModel } from "./counter.model.js";
+import mongoose, { model, Schema } from "mongoose";
+import { CustomerCounterModel } from "./counter.1_0_0.model.js";
 
 const customerSchema = new Schema(
   {
@@ -128,4 +128,5 @@ customerSchema.pre("save", async function (next) {
   }
 });
 
-export const CustomerModel = model("Customers", customerSchema);
+export const CustomerModel =
+  mongoose.models.CustomersV1 || model("CustomersV1", customerSchema);

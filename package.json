@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "type": "module",
   "description": "![alt text](image.png)\r ![alt text](image-1.png)\r ![alt text](image-2.png)\r ![alt text](image-3.png)\r ![alt text](image-4.png)",
-  "main": "index.js",
+  "main": "index.1_0_0.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon index.1_0_0.js",
+    "prod": "node index.1_0_0.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "RatxennextaR",
   "license": "ISC",
   "dependencies": {
+    "@react-google-maps/api": "^2.20.5",
+    "axios": "^1.7.9",
     "cors": "^2.8.5",
     "express": "^4.21.1",
     "express-mongo-sanitize": "^2.2.0",
@@ -20,7 +23,10 @@
     "mongodb": "^6.10.0",
     "mongoose": "^8.8.1",
     "multer": "^1.4.5-lts.1",
+    "socket.io-client": "^4.8.1",
+    "stack-trace": "^1.0.0-pre2",
     "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
