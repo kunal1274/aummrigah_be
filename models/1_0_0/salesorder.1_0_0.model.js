@@ -9,6 +9,16 @@ const salesOrderSchema1C1I = new Schema(
       required: false,
       unique: true,
     },
+    orderType: {
+      type: String,
+      required: true,
+      enum: {
+        values: ["Sales", "Return"],
+        message:
+          "{VALUE} is not a valid order type. Use case-sensitive value among these only 'Purchase','Return'.",
+      },
+      default: "Sales",
+    },
     customer: {
       type: Schema.Types.ObjectId,
       ref: "Customers", // Reference to the Customer model
@@ -18,6 +28,10 @@ const salesOrderSchema1C1I = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Items", // Reference to the Item model
       required: true,
+    },
+    salesAddress: {
+      type: String, // Adjust the type if address is more complex
+      required: false, // Ensures that salesAddress is always set
     },
     advance: {
       type: Number,
@@ -43,14 +57,17 @@ const salesOrderSchema1C1I = new Schema(
         return Math.round(v * 100) / 100;
       },
     },
-    discount: {
-      type: Number,
+    currency: {
+      type: String,
       required: true,
-      default: 0.0,
-      set: function (v) {
-        return Math.round(v * 100) / 100;
+      enum: {
+        values: ["INR", "USD", "EUR", "GBP"],
+        message:
+          "{VALUE} is not a valid currency. Use among these only'INR','USD','EUR','GBP'.",
       },
+      default: "INR",
     },
+
     charges: {
       type: Number,
       required: true,
@@ -59,14 +76,37 @@ const salesOrderSchema1C1I = new Schema(
         return Math.round(v * 100) / 100;
       },
     },
-    tax: {
+    discount: {
       type: Number,
       required: true,
       default: 0.0,
+      min: [0, "Discount cannot be negative"],
+      max: [100, "Discount cannot exceed 100%"],
       set: function (v) {
         return Math.round(v * 100) / 100;
       },
     },
+    tax: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      min: [0, "Tax cannot be negative"],
+      max: [100, "Tax cannot exceed 100%"],
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    withholdingTax: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      min: [0, "Withholding Tax cannot be negative"],
+      max: [100, "Withholding Tax cannot exceed 100%"],
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+
     lineAmt: {
       type: Number,
       required: true,
@@ -75,23 +115,100 @@ const salesOrderSchema1C1I = new Schema(
         return Math.round(v * 100) / 100; // this should be a calculation like (qty*price) - discount + charges
       },
     },
+    // Computed Fields
+    taxAmount: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    discountAmt: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    withholdingTaxAmt: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    netAmtAfterTax: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    netAR: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
     status: {
       type: String,
       required: true,
       enum: {
         values: [
           "Draft",
-          "Cancelled",
+          "Approved",
           "Confirmed",
-          "Shipped",
+          "Shipped", // Outbound Transit
           "Delivered",
           "Invoiced",
+          "Cancelled",
+          "AdminMode",
         ],
         message:
-          "{VALUE} is not a valid status . Use among these only'Draft','Cancelled','Confirmed','Shipped'.'Delivered','Invoiced'.",
+          "{VALUE} is not a valid status . Use among these only'Draft','Cancelled','Confirmed','Shipped'.'Delivered','Invoiced','AdminMode'.",
       },
       default: "Draft",
     },
+    settlementStatus: {
+      type: String,
+      required: true,
+      enum: {
+        values: [
+          "PAYMENT_PENDING",
+          "PAYMENT_PARTIAL",
+          "PAYMENT_FULL",
+          "PAYMENT_FAILED",
+        ],
+        message:
+          "{VALUE} is not a valid status .Use  Case-sensitive among these only'PAYMENT_PENDING','PAYMENT_PARTIAL','PAYMENT_FULL','PAYMENT_FAILED'.",
+      },
+      default: "PAYMENT_PENDING",
+    },
+    archived: { type: Boolean, default: false }, // New field
+    createdBy: {
+      type: String,
+      required: true,
+      default: "SystemSOCreation",
+    },
+    updatedBy: {
+      type: String,
+      default: null,
+    },
+    active: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    // New field for file uploads
+    files: [
+      {
+        fileName: { type: String, required: true }, // Name of the file
+        fileType: { type: String, required: true }, // MIME type (e.g., "application/pdf", "image/png")
+        fileUrl: { type: String, required: true }, // URL/path of the uploaded file
+        uploadedAt: { type: Date, default: Date.now }, // Timestamp for the upload
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -105,6 +222,68 @@ salesOrderSchema1C1I.pre("save", async function (next) {
   }
 
   try {
+    // Populate salesAddress and currency from customer's address and currency if not already set
+    if (!doc.salesAddress || !doc.currency) {
+      // Fetch the customer document to get the address and currency
+      const customer = await mongoose
+        .model("Customers")
+        .findById(doc.customer)
+        .select("address currency");
+
+      if (!customer) {
+        throw new Error(`Customer with ID ${doc.customer} not found.`);
+      }
+
+      if (!customer.address) {
+        throw new Error(
+          `Customer with ID ${doc.customer} does not have an address.`
+        );
+      }
+
+      if (!customer.currency) {
+        throw new Error(
+          `Customer with ID ${doc.customer} does not have a currency set.`
+        );
+      }
+
+      if (!doc.salesAddress) {
+        doc.salesAddress = customer.address;
+      }
+
+      if (!doc.currency) {
+        doc.currency = customer.currency;
+      }
+    }
+
+    // Calculate Computed Fields
+    const initialAmt = doc.quantity * doc.price;
+    const discountAmt =
+      Math.round(((doc.discount * initialAmt) / 100) * 100) / 100;
+    const taxAmount =
+      Math.round(
+        ((doc.tax * (doc.quantity * doc.price - discountAmt + doc.charges)) /
+          100) *
+          100
+      ) / 100;
+    const withholdingTaxAmt =
+      Math.round(
+        ((doc.withholdingTax *
+          (doc.quantity * doc.price - discountAmt + doc.charges)) /
+          100) *
+          100
+      ) / 100;
+    const netAmtAfterTax =
+      Math.round(
+        (doc.quantity * doc.price - discountAmt + doc.charges + taxAmount) * 100
+      ) / 100;
+    const netAR = Math.round((netAmtAfterTax + withholdingTaxAmt) * 100) / 100;
+
+    doc.discountAmt = discountAmt;
+    doc.taxAmount = taxAmount;
+    doc.withholdingTaxAmt = withholdingTaxAmt;
+    doc.netAmtAfterTax = netAmtAfterTax;
+    doc.netAR = netAR;
+
     await doc.validate();
 
     const dbResponse = await SalesOrderCounterModel.findByIdAndUpdate(
@@ -141,7 +320,9 @@ salesOrderSchema1C1I.pre(/^find/, function (next) {
 
 // Calculate Line Amount Automatically
 salesOrderSchema1C1I.pre("validate", function (next) {
-  this.lineAmt = this.quantity * this.price - this.discount + this.charges;
+  const initialAmt = this.quantity * this.price;
+  const discountAmt = Math.round(this.discount * initialAmt) / 100;
+  this.lineAmt = this.quantity * this.price - discountAmt + this.charges;
   next();
 });
 
@@ -167,15 +348,46 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       }
     }
 
-    // Recalculate line amount if relevant fields are being updated
-    if (update.quantity || update.price || update.discount || update.charges) {
-      const quantity = update.quantity || this.getQuery().quantity || 1;
-      const price = update.price || this.getQuery().price || 0;
-      const discount = update.discount || this.getQuery().discount || 0;
-      const charges = update.charges || this.getQuery().charges || 0;
+    // Recalculate computed fields if relevant fields are being updated
+    if (
+      update.quantity ||
+      update.price ||
+      update.discount ||
+      update.charges ||
+      update.tax ||
+      update.withholdingTax
+    ) {
+      // Fetch the existing document to get current values if not provided in the update
+      const docToUpdate = await this.model.findOne(this.getQuery());
 
-      update.lineAmt = quantity * price - discount + charges;
-      this.setUpdate(update);
+      const quantity = update.quantity || docToUpdate.quantity || 1;
+      const price = update.price || docToUpdate.price || 0;
+      const discount = update.discount || docToUpdate.discount || 0;
+      const charges = update.charges || docToUpdate.charges || 0;
+      const tax = update.tax || docToUpdate.tax || 0;
+      const withholdingTax =
+        update.withholdingTax || docToUpdate.withholdingTax || 0;
+
+      const initialAmt = quantity * price;
+      const discountAmt =
+        Math.round(((discount * initialAmt) / 100) * 100) / 100;
+      const lineAmt =
+        Math.round((quantity * price - discountAmt + charges) * 100) / 100;
+      const taxAmount = Math.round(((tax * lineAmt) / 100) * 100) / 100;
+      const withholdingTaxAmt =
+        Math.round(((withholdingTax * lineAmt) / 100) * 100) / 100;
+      const netAmtAfterTax = Math.round((lineAmt + taxAmount) * 100) / 100;
+      const netAR =
+        Math.round(
+          (netAmtAfterTax + (withholdingTax * initialAmt) / 100) * 100
+        ) / 100;
+
+      update.lineAmt = lineAmt;
+      update.discountAmt = discountAmt;
+      update.taxAmount = taxAmount;
+      update.withholdingTaxAmt = withholdingTaxAmt;
+      update.netAmtAfterTax = netAmtAfterTax;
+      update.netAR = netAR;
     }
 
     next();

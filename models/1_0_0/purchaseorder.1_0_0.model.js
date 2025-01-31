@@ -24,6 +24,41 @@ const purchaseOrderSchema1C1I = new Schema(
       ref: "Vendors", // Reference to the Vendor model
       required: true,
     },
+
+    item: {
+      type: Schema.Types.ObjectId,
+      ref: "Items", // Reference to the Item model
+      required: true,
+    },
+    purchaseAddress: {
+      type: String, // Adjust the type if address is more complex
+      required: false, // Ensures that salesAddress is always set
+    },
+    advance: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 1.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100; // round off during save
+      },
+    },
+
+    price: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
     currency: {
       type: String,
       required: true,
@@ -35,87 +70,42 @@ const purchaseOrderSchema1C1I = new Schema(
       default: "INR",
     },
 
-    item: {
-      type: Schema.Types.ObjectId,
-      ref: "Items", // Reference to the Item model
-      required: true,
-    },
-    quantity: {
-      type: Number,
-      required: true,
-      default: 1.0,
-      set: function (v) {
-        return Math.round(v * 100) / 100; // round off during save
-      },
-    },
-    consumedQuantity: {
-      type: Number,
-      required: true,
-      default: 0.0,
-      set: function (v) {
-        return Math.round(v * 100) / 100; // round off during save
-      },
-    },
-    price: {
-      type: Number,
-      required: true,
-      default: 0.0,
-      set: function (v) {
-        return Math.round(v * 100) / 100;
-      },
-    },
-    discount: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
     charges: {
       type: Number,
       required: true,
       default: 0.0,
     },
-    // Tax and deduction fields
-    tax: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    cgst: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    sgst: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    igst: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    vendorTDS: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    vendorTCS: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    vendorCommission: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
-    vendorCompanyCommission: {
-      amount: { type: Number, default: 0 },
-      rate: { type: Number, default: 0 },
-    },
 
-    // Computed fields
-    totalReceivable: { type: Number, default: 0.0 },
-    totalPayable: { type: Number, default: 0.0 },
-    totalGovtPayable: { type: Number, default: 0.0 },
-    totalGovtReceivable: { type: Number, default: 0.0 },
-    totalCommissionPayable: { type: Number, default: 0.0 },
-    totalCommissionReceivable: { type: Number, default: 0.0 },
-    earningsAfterCommission: { type: Number, default: 0.0 },
+    discount: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      min: [0, "Discount cannot be negative"],
+      max: [100, "Discount cannot exceed 100%"],
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    tax: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      min: [0, "Tax cannot be negative"],
+      max: [100, "Tax cannot exceed 100%"],
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    withholdingTax: {
+      type: Number,
+      required: true,
+      default: 0.0,
+      min: [0, "Withholding Tax cannot be negative"],
+      max: [100, "Withholding Tax cannot exceed 100%"],
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
 
     lineAmt: {
       type: Number,
@@ -125,62 +115,62 @@ const purchaseOrderSchema1C1I = new Schema(
         return Math.round(v * 100) / 100; // this should be a calculation like (qty*price) - discount + charges
       },
     },
-    allocationId: {
-      type: Schema.Types.ObjectId,
-      ref: "Allocations",
-      required: false,
+    // Computed Fields
+    taxAmount: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
     },
-    soId: {
-      type: Schema.Types.ObjectId,
-      ref: "SalesOrders",
-      required: false,
+    discountAmt: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
     },
-    // baseAmount: {
-    //   type: Number,
-    //   required: true,
-    //   default: function () {
-    //     return this.quantity * this.price + this.charges - this.discount;
-    //   },
-    // },
-    // amtAfterTax: {
-    //   type: Number,
-    //   required: true,
-    //   default: function () {
-    //     return this.baseAmount + this.tax;
-    //   },
-    // },
-    // commission: {
-    //   type: Number,
-    //   required: true,
-    //   default: function () {
-    //     return 0.2 * baseAmount;
-    //   },
-    // },
-    // totalPayable: {
-    //   type: Number,
-    //   required: true,
-    //   default: function () {
-    //     return this.amtAfterTax - this.withholdingTax;
-    //   },
-    // },
+    withholdingTaxAmt: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+
+    netAmtAfterTax: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
+    netAP: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
 
     status: {
       type: String,
       required: true,
       enum: {
         values: [
-          "DRAFT",
-          "CANCELLED",
-          "CONFIRMED",
-          "SHIPPED",
-          "DELIVERED",
-          "INVOICED",
-          "ADMINMODE",
+          "Draft",
+          "Approved",
+          "Confirmed",
+          "InboundTransit",
+          "Received",
+          "Invoiced",
+          "AdminMode",
+          "Cancelled",
         ],
         message:
           "{VALUE} is not a valid status . Use  Case-sensitive among these only'DRAFT','CANCELLED','CONFIRMED','SHIPPED'.'DELIVERED','DELIVERED' or 'ADMINMODE'.",
       },
-      default: "DRAFT",
+      default: "Draft",
     },
     settlementStatus: {
       type: String,
@@ -197,21 +187,6 @@ const purchaseOrderSchema1C1I = new Schema(
       },
       default: "PAYMENT_PENDING",
     },
-
-    pickupLocation: { type: String, required: true, default: "Vendor Address" },
-    pickupLocationCoordinates: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number], required: true, default: [0, 0] }, // [longitude, latitude]
-    },
-    destinationLocation: {
-      type: String,
-      required: true,
-      default: "Vendor Final Destination",
-    },
-    destinationCoordinates: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number], required: true, default: [0, 0] },
-    },
     archived: { type: Boolean, default: false }, // New field
     createdBy: {
       type: String,
@@ -222,19 +197,10 @@ const purchaseOrderSchema1C1I = new Schema(
       type: String,
       default: null,
     },
-    // statusHistory: [
-    //   {
-    //     oldStatus: { type: String, required: true },
-    //     newStatus: { type: String, required: true },
-    //     changedBy: { type: String, required: true, default: "AdminPurchase" }, // User or system
-    //     reason: { type: String },
-    //     timestamp: { type: Date, default: Date.now },
-    //   },
-    // ],
     active: {
       type: Boolean,
       required: true,
-      default: false,
+      default: true,
     },
     // New field for file uploads
     files: [
@@ -253,53 +219,74 @@ const purchaseOrderSchema1C1I = new Schema(
 purchaseOrderSchema1C1I.pre("save", async function (next) {
   const doc = this;
 
-  if (
-    doc.isModified("orderType") ||
-    doc.isModified("quantity") ||
-    doc.isModified("price") ||
-    doc.isModified("charges") ||
-    doc.isModified("discount") ||
-    doc.isModified("tax") ||
-    doc.isModified("cgst") ||
-    doc.isModified("sgst") ||
-    doc.isModified("igst") ||
-    doc.isModified("vendorTCS") ||
-    doc.isModified("vendorTDS") ||
-    doc.isModified("vendorCommission") ||
-    doc.isModified("vendorCompanyCommission")
-  ) {
-    const calculatedAmount = calculateAmounts({
-      type: doc.orderType,
-      qty: doc.quantity,
-      price: doc.price,
-      charges: doc.charges,
-      discount: doc.discount,
-      tax: doc.tax,
-      cgst: doc.cgst,
-      sgst: doc.sgst,
-      igst: doc.igst,
-      vendorTDS: doc.vendorTDS,
-      vendorTCS: doc.vendorTCS,
-      vendorCommission: doc.vendorCommission,
-      vendorCompanyCommission: doc.vendorCompanyCommission,
-    });
-
-    doc.totalReceivable = calculatedAmount.vendor.totalReceivable;
-    doc.totalPayable = calculatedAmount.vendor.totalPayable;
-    doc.totalGovtPayable = calculatedAmount.vendor.totalGovtPayable;
-    doc.totalGovtReceivable = calculatedAmount.vendor.totalGovtReceivable;
-    doc.totalCommissionPayable = calculatedAmount.vendor.totalCommissionPayable;
-    doc.totalCommissionReceivable =
-      calculatedAmount.vendor.totalCommissionReceivable;
-    doc.earningsAfterCommission =
-      calculatedAmount.vendor.earningsAfterCommission;
-  }
-
   if (!doc.isNew) {
     return next();
   }
 
   try {
+    // Populate salesAddress and currency from customer's address and currency if not already set
+    if (!doc.purchaseAddress || !doc.currency) {
+      // Fetch the customer document to get the address and currency
+      const vendor = await mongoose
+        .model("Vendors")
+        .findById(doc.vendor)
+        .select("address currency");
+
+      if (!vendor) {
+        throw new Error(`Vendor with ID ${doc.vendor} not found.`);
+      }
+
+      if (!vendor.address) {
+        throw new Error(
+          `Vendor with ID ${doc.vendor} does not have an address.`
+        );
+      }
+
+      if (!vendor.currency) {
+        throw new Error(
+          `Vendor with ID ${doc.vendor} does not have a currency set.`
+        );
+      }
+
+      if (!doc.purchaseAddress) {
+        doc.purchaseAddress = vendor.address;
+      }
+
+      if (!doc.currency) {
+        doc.currency = vendor.currency;
+      }
+    }
+
+    // Calculate Computed Fields
+    const initialAmt = doc.quantity * doc.price;
+    const discountAmt =
+      Math.round(((doc.discount * initialAmt) / 100) * 100) / 100;
+    const taxAmount =
+      Math.round(
+        ((doc.tax * (doc.quantity * doc.price - discountAmt + doc.charges)) /
+          100) *
+          100
+      ) / 100;
+    const withholdingTaxAmt =
+      Math.round(
+        ((doc.withholdingTax *
+          (doc.quantity * doc.price - discountAmt + doc.charges)) /
+          100) *
+          100
+      ) / 100;
+
+    const netAmtAfterTax =
+      Math.round(
+        (doc.quantity * doc.price - discountAmt + doc.charges + taxAmount) * 100
+      ) / 100;
+    const netAP = Math.round((netAmtAfterTax - withholdingTaxAmt) * 100) / 100;
+
+    doc.discountAmt = discountAmt;
+    doc.taxAmount = taxAmount;
+    doc.withholdingTaxAmt = withholdingTaxAmt;
+    doc.netAmtAfterTax = netAmtAfterTax;
+    doc.netAP = netAP;
+
     await doc.validate();
 
     const dbResponse = await PurchaseOrderCounterModel.findByIdAndUpdate(
@@ -327,22 +314,18 @@ purchaseOrderSchema1C1I.pre("save", async function (next) {
 // Populate References on Find
 
 purchaseOrderSchema1C1I.pre(/^find/, function (next) {
-  this.populate("vendor", "name contactNum").populate(
-    "item",
-    "name price purchPrice salesPrice invPrice type unit"
-  );
+  this.populate(
+    "vendor",
+    "code name contactNum address currency registrationNum panNum active"
+  ).populate("item", "name price type unit");
   next();
 });
 
 // Calculate Line Amount Automatically
 purchaseOrderSchema1C1I.pre("validate", function (next) {
-  this.lineAmt =
-    this.quantity * this.price -
-    this.discount +
-    this.charges +
-    this.tax -
-    this.vendorTDS +
-    this.vendorTCS;
+  const initialAmt = this.quantity * this.price;
+  const discountAmt = Math.round(this.discount * initialAmt) / 100;
+  this.lineAmt = this.quantity * this.price - discountAmt + this.charges;
   next();
 });
 
@@ -368,15 +351,46 @@ purchaseOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       }
     }
 
-    // Recalculate line amount if relevant fields are being updated
-    if (update.quantity || update.price || update.discount || update.charges) {
-      const quantity = update.quantity || this.getQuery().quantity || 1;
-      const price = update.price || this.getQuery().price || 0;
-      const discount = update.discount || this.getQuery().discount || 0;
-      const charges = update.charges || this.getQuery().charges || 0;
+    // Recalculate computed fields if relevant fields are being updated
+    if (
+      update.quantity ||
+      update.price ||
+      update.discount ||
+      update.charges ||
+      update.tax ||
+      update.withholdingTax
+    ) {
+      // Fetch the existing document to get current values if not provided in the update
+      const docToUpdate = await this.model.findOne(this.getQuery());
 
-      update.lineAmt = quantity * price - discount + charges;
-      this.setUpdate(update);
+      const quantity = update.quantity || docToUpdate.quantity || 1;
+      const price = update.price || docToUpdate.price || 0;
+      const discount = update.discount || docToUpdate.discount || 0;
+      const charges = update.charges || docToUpdate.charges || 0;
+      const tax = update.tax || docToUpdate.tax || 0;
+      const withholdingTax =
+        update.withholdingTax || docToUpdate.withholdingTax || 0;
+
+      const initialAmt = quantity * price;
+      const discountAmt =
+        Math.round(((discount * initialAmt) / 100) * 100) / 100;
+      const lineAmt =
+        Math.round((quantity * price - discountAmt + charges) * 100) / 100;
+      const taxAmount = Math.round(((tax * lineAmt) / 100) * 100) / 100;
+      const withholdingTaxAmt =
+        Math.round(((withholdingTax * lineAmt) / 100) * 100) / 100;
+      const netAmtAfterTax = Math.round((lineAmt + taxAmount) * 100) / 100;
+      const netAR =
+        Math.round(
+          (netAmtAfterTax + (withholdingTax * initialAmt) / 100) * 100
+        ) / 100;
+
+      update.lineAmt = lineAmt;
+      update.discountAmt = discountAmt;
+      update.taxAmount = taxAmount;
+      update.withholdingTaxAmt = withholdingTaxAmt;
+      update.netAmtAfterTax = netAmtAfterTax;
+      update.netAR = netAR;
     }
 
     next();
@@ -385,105 +399,7 @@ purchaseOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
   }
 });
 
-const calculateAmounts = ({
-  type,
-  qty,
-  price,
-  charges = 0,
-  discount = 0,
-  tax = { amount: 0, rate: 0 },
-  cgst = { amount: 0, rate: 0 },
-  sgst = { amount: 0, rate: 0 },
-  igst = { amount: 0, rate: 0 },
-  vendorTDS = { amount: 0, rate: 0 },
-  vendorTCS = { amount: 0, rate: 0 },
-  vendorCommission = { amount: 0, rate: 0 },
-  vendorCompanyCommission = { amount: 0, rate: 0 },
-}) => {
-  // Step 1: Base Amount Calculation
-  const baseAmount = qty * price + charges - discount;
-
-  // Step 2: Tax Calculations
-  const calculatedTax = tax.amount || (tax.rate * baseAmount) / 100;
-  const calculatedCGST = cgst.amount || (cgst.rate * baseAmount) / 100;
-  const calculatedSGST = sgst.amount || (sgst.rate * baseAmount) / 100;
-  const calculatedIGST = igst.amount || (igst.rate * baseAmount) / 100;
-
-  const totalTax =
-    calculatedTax || calculatedCGST + calculatedSGST + calculatedIGST;
-
-  const amtAfterTax = baseAmount + totalTax;
-
-  // Step 3: Customer TDS and TCS Calculations
-
-  // Step 6: Vendor/Driver Commission
-  const calculatedVendorCommission =
-    vendorCommission.amount || (vendorCommission.rate * baseAmount) / 100;
-
-  const calculatedVendorCompanyCommission =
-    vendorCompanyCommission.amount ||
-    (vendorCompanyCommission.rate * baseAmount) / 100;
-
-  // Step 7: Driver TDS and TCS Calculations
-  const calculatedVendorTDS =
-    vendorTDS.amount || (vendorTDS.rate * baseAmount) / 100;
-  const calculatedVendorTCS =
-    vendorTCS.amount || (vendorTCS.rate * baseAmount) / 100;
-
-  // Step 8: Final Amount earned from commission for the company
-  const earningsAfterCommission =
-    calculatedVendorCommission - calculatedVendorCompanyCommission;
-
-  const calculatedTotal =
-    amtAfterTax +
-    calculatedVendorTCS +
-    calculatedVendorCompanyCommission -
-    calculatedVendorTDS -
-    calculatedVendorCommission;
-
-  // Step 5: Total Receivable from Customer
-
-  const totalReceivable = type === "Purchase" ? 0 : calculatedTotal;
-  const totalPayable = type === "Purchase" ? calculatedTotal : 0;
-  const totalGovtPayable =
-    type === "Purchase" ? calculatedVendorTDS : calculatedVendorTCS + totalTax;
-  const totalGovtReceivable =
-    type === "Purchase" ? calculatedVendorTCS + totalTax : calculatedVendorTDS;
-  const totalCommissionReceivable =
-    type === "Purchase"
-      ? calculatedVendorCommission
-      : calculatedVendorCompanyCommission;
-  const totalCommissionPayable =
-    type === "Purchase"
-      ? calculatedVendorCompanyCommission
-      : calculatedVendorCommission;
-
-  return {
-    vendor: {
-      baseAmount,
-      totalTax,
-      amtAfterTax,
-      vendorTDS: calculatedVendorTDS, // tds deducted at our end
-      vendorTCS: calculatedVendorTCS, // tcs collected by vendor and thus added on our payables will be done by vendor
-      vendorCommission: calculatedVendorCommission,
-      vendorCompanyCommission: calculatedVendorCompanyCommission,
-      earningsAfterCommission,
-      totalReceivable,
-      totalPayable, // will be used in case of return or refund.
-      totalGovtPayable,
-      totalGovtReceivable,
-      totalCommissionPayable,
-      totalCommissionReceivable,
-    },
-  };
-};
-
 purchaseOrderSchema1C1I.index({ orderNum: 1, vendor: 1, item: 1 });
-purchaseOrderSchema1C1I.index({ orderNum: 1, allocationId: 1, soId: 1 });
-purchaseOrderSchema1C1I.index({ orderNum: 1, soId: 1 });
-purchaseOrderSchema1C1I.index({ orderNum: 1, allocationId: 1 });
-purchaseOrderSchema1C1I.index({ pickupLocationCoordinates: "2dsphere" });
-purchaseOrderSchema1C1I.index({ destinationCoordinates: "2dsphere" });
 
 export const PurchaseOrderModel =
   mongoose.models.PurchaseOrders ||
