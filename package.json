@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "description": "![alt text](image.png)\r ![alt text](image-1.png)\r ![alt text](image-2.png)\r ![alt text](image-3.png)\r ![alt text](image-4.png)",
-  "main": "index.1_0_0.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.1_0_0.js",
-    "prod": "node index.1_0_0.js"
+    "start": "nodemon index.js",
+    "prod": "node index.js"
   },
   "keywords": [],
   "author": "RatxennextaR",

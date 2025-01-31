@@ -1,9 +1,6 @@
 import expressAumMrigah from "express";
 import { config } from "dotenv";
 import corsAumMrigah from "cors";
-import connectToDb from "./database/mongodb.muuSHakaH.db.js";
-import { customerRouter } from "./routes/customer.muuSHakaH.routes.js";
-import { itemRouter } from "./routes/item.muuSHakaH.routes.js";
 import mongoSanitize from "express-mongo-sanitize";
 import helmet from "helmet";
 import xss from "xss-clean";
@@ -11,11 +8,15 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import { errorHandler } from "./middleware/errorHandler.muuSHakaH.mw.js";
+
+import connectToDb from "./database/1_0_0/mongodb.1_0_0.db.js";
+import { customerRouter } from "./routes/1_0_0/customer.1_0_0.routes.js";
+import { itemRouter } from "./routes/item.muuSHakaH.routes.js";
+import { errorHandler } from "./middleware/1_0_0/errorHandler.1_0_0.mw.js";
 import { clientRouter } from "./routes/client.muuSHakaH.routes.js";
-import { salesOrderRouter } from "./routes/salesorders.muuSHakaH.routes.js";
-import { vendorRouter } from "./routes/vendor.muuSHakaH.routes.js";
-import { purchaseOrderRouter } from "./routes/purchaseorders.muuSHakaH.routes.js";
+import { salesOrderRouter } from "./routes/1_0_0/salesorder.1_0_0.routes.js";
+import { vendorRouter } from "./routes/1_0_0/vendor.1_0_0.routes.js";
+import { purchaseOrderRouter } from "./routes/1_0_0/purchaseorder.1_0_0.routes.js";
 import { lmRouter } from "./routes/ledgermapping.muuSHakaH.routes.js";
 import { ledgerAccountRouter } from "./routes/ledger.muuSHakaH.routes.js";
 import { bankRouter } from "./routes/bank.muuSHakaH.routes.js";
@@ -203,9 +204,9 @@ AumMrigahApp.use((req, res) => {
 const startServer = async () => {
   try {
     await connectToDb();
-    AumMrigahApp.listen(PORT + 1, () => {
+    AumMrigahApp.listen(PORT, () => {
       console.log(
-        `The Node server has been now running at ${PORT + 1} for testing `
+        `The Node server index.1_0_0 has been now running at ${PORT} for testing `
       );
     });
   } catch (error) {
@@ -219,7 +220,7 @@ const startServer = async () => {
     await connectToDb();
     AumMrigahApp.listen(PORT + 1, () => {
       console.log(
-        `The Node server has been now running at ${PORT + 1} for testing `
+        `The Node server at main entry index.1_0_0.js has been now running at ${PORT} for testing `
       );
     });
   } catch (error) {
