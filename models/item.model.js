@@ -128,4 +128,4 @@ itemSchema.pre("save", async function (next) {
 
 itemSchema.set("toJSON", { getters: true });
 
-export const ItemModel = model("Items", itemSchema);
+export const ItemModel = model("ItemsV3", itemSchema);

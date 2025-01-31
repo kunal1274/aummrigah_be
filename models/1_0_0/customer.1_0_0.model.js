@@ -129,4 +129,4 @@ customerSchema.pre("save", async function (next) {
 });
 
 export const CustomerModel =
-  mongoose.models.CustomersV1 || model("CustomersV1", customerSchema);
+  mongoose.models.Customers || model("Customers", customerSchema);

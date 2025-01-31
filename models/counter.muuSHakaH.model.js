@@ -13,7 +13,7 @@ const customerCounterSchema = new Schema({
 });
 
 export const CustomerCounterModel = model(
-  "CustomerCounters",
+  "CustomerCountersV2",
   customerCounterSchema
 );
 
@@ -28,7 +28,10 @@ const vendorCounterSchema = new Schema({
   },
 });
 
-export const VendorCounterModel = model("VendorCounters", vendorCounterSchema);
+export const VendorCounterModel = model(
+  "VendorCountersV2",
+  vendorCounterSchema
+);
 
 const itemCounterSchema = new Schema({
   _id: {
@@ -41,7 +44,7 @@ const itemCounterSchema = new Schema({
   },
 });
 
-export const ItemCounterModel = model("ItemCounters", itemCounterSchema);
+export const ItemCounterModel = model("ItemCountersV2", itemCounterSchema);
 
 const ledgerAccountCounterSchema = new Schema({
   _id: {
@@ -55,7 +58,7 @@ const ledgerAccountCounterSchema = new Schema({
 });
 
 export const LedgerAccountCounterModel = model(
-  "LedgerAccountCounters",
+  "LedgerAccountCountersV2",
   ledgerAccountCounterSchema
 );
 
@@ -71,7 +74,7 @@ const ledgerMappingCounterSchema = new Schema({
 });
 
 export const LedgerMappingCounterModel = model(
-  "LedgerMappingCounters",
+  "LedgerMappingCountersV2",
   ledgerMappingCounterSchema
 );
 
@@ -86,7 +89,7 @@ const bankCounterSchema = new Schema({
   },
 });
 
-export const BankCounterModel = model("BankCounters", bankCounterSchema);
+export const BankCounterModel = model("BankCountersV2", bankCounterSchema);
 
 const taxCounterSchema = new Schema({
   _id: {
@@ -99,7 +102,7 @@ const taxCounterSchema = new Schema({
   },
 });
 
-export const TaxCounterModel = model("TaxCounters", taxCounterSchema);
+export const TaxCounterModel = model("TaxCountersV2", taxCounterSchema);
 
 const SalesOrderCounterSchema = new Schema({
   _id: {
@@ -113,7 +116,7 @@ const SalesOrderCounterSchema = new Schema({
 });
 
 export const SalesOrderCounterModel = model(
-  "SalesOrderCounter",
+  "SalesOrderCounterV2",
   SalesOrderCounterSchema
 );
 
@@ -129,7 +132,7 @@ const purchaseOrderCounterSchema = new Schema({
 });
 
 export const PurchaseOrderCounterModel = model(
-  "PurchaseOrderCounter",
+  "PurchaseOrderCounterV2",
   purchaseOrderCounterSchema
 );
 
@@ -145,6 +148,6 @@ const allocationCounterSchema = new Schema({
 });
 
 export const AllocationCounterModel = model(
-  "AllocationCounters",
+  "AllocationCountersV2",
   allocationCounterSchema
 );

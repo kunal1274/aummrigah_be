@@ -12,6 +12,6 @@ const salesOrderEventLogSchema = new mongoose.Schema({
 });
 
 export const SalesOrderEventLogModel = mongoose.model(
-  "SalesOrderEventLog",
+  "SalesOrderEventLogV2",
   salesOrderEventLogSchema
 );

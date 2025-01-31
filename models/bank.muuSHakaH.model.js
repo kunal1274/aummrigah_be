@@ -117,4 +117,4 @@ bankSchema.pre("save", async function (next) {
 
 // bankSchema.set("toJSON", { getters: true });
 
-export const BankModel = model("Banks", bankSchema);
+export const BankModel = model("BanksV2", bankSchema);

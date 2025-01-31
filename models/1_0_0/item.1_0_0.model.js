@@ -128,5 +128,4 @@ itemSchema.pre("save", async function (next) {
 
 itemSchema.set("toJSON", { getters: true });
 
-export const ItemModel =
-  mongoose.models.ItemsV1 || model("ItemsV1", itemSchema);
+export const ItemModel = mongoose.models.Items || model("Items", itemSchema);

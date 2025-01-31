@@ -128,4 +128,4 @@ customerSchema.pre("save", async function (next) {
   }
 });
 
-export const CustomerModel = model("Customers", customerSchema);
+export const CustomerModel = model("CustomersV3", customerSchema);

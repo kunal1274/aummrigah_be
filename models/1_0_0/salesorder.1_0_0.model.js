@@ -187,4 +187,4 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
 salesOrderSchema1C1I.index({ orderNum: 1, customer: 1, item: 1 });
 
 export const SalesOrderModel =
-  mongoose.models.SalesOrdersV1 || model("SalesOrdersV1", salesOrderSchema1C1I);
+  mongoose.models.SalesOrders || model("SalesOrders", salesOrderSchema1C1I);

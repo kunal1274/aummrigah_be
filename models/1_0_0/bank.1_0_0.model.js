@@ -117,5 +117,4 @@ bankSchema.pre("save", async function (next) {
 
 // bankSchema.set("toJSON", { getters: true });
 
-export const BankModel =
-  mongoose.models.BanksV1 || model("BanksV1", bankSchema);
+export const BankModel = mongoose.models.Banks || model("Banks", bankSchema);

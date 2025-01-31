@@ -129,4 +129,4 @@ customerSchema.pre("save", async function (next) {
   }
 });
 
-export const CustomerModel = model("Customers", customerSchema);
+export const CustomerModel = model("CustomersV2", customerSchema);

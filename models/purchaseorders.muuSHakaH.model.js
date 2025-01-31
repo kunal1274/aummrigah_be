@@ -486,7 +486,7 @@ purchaseOrderSchema1C1I.index({ pickupLocationCoordinates: "2dsphere" });
 purchaseOrderSchema1C1I.index({ destinationCoordinates: "2dsphere" });
 
 export const PurchaseOrderModel = model(
-  "PurchaseOrders",
+  "PurchaseOrdersV2",
   purchaseOrderSchema1C1I
 );
 

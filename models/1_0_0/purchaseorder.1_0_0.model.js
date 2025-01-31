@@ -486,5 +486,5 @@ purchaseOrderSchema1C1I.index({ pickupLocationCoordinates: "2dsphere" });
 purchaseOrderSchema1C1I.index({ destinationCoordinates: "2dsphere" });
 
 export const PurchaseOrderModel =
-  mongoose.models.PurchaseOrdersV1 ||
-  model("PurchaseOrdersV1", purchaseOrderSchema1C1I);
+  mongoose.models.PurchaseOrders ||
+  model("PurchaseOrders", purchaseOrderSchema1C1I);

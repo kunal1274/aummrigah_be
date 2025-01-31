@@ -129,4 +129,4 @@ vendorSchema.pre("save", async function (next) {
 });
 
 export const VendorModel =
-  mongoose.models.VendorsV1 || model("VendorsV1", vendorSchema);
+  mongoose.models.Vendors || model("Vendors", vendorSchema);

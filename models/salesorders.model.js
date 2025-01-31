@@ -186,4 +186,4 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
 
 salesOrderSchema1C1I.index({ orderNum: 1, customer: 1, item: 1 });
 
-export const SalesOrderModel = model("SalesOrder", salesOrderSchema1C1I);
+export const SalesOrderModel = model("SalesOrderV3", salesOrderSchema1C1I);

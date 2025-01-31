@@ -536,7 +536,7 @@ salesOrderSchema1C1I.index({ orderNum: 1, allocationId: 1 });
 salesOrderSchema1C1I.index({ pickupLocationCoordinates: "2dsphere" });
 salesOrderSchema1C1I.index({ destinationCoordinates: "2dsphere" });
 
-export const SalesOrderModel = model("SalesOrders", salesOrderSchema1C1I);
+export const SalesOrderModel = model("SalesOrdersV2", salesOrderSchema1C1I);
 
 const salesOrderSchemaFuture = new mongoose.Schema(
   {
