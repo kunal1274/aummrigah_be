@@ -108,10 +108,7 @@ export const getSalesOrderById = async (req, res) => {
     // Use populate to fetch customer and item details
     const salesOrder = await SalesOrderModel.findById(salesOrderId)
       .populate("customer", "name contactNum address")
-      .populate(
-        "item",
-        "name description price purchPrice salesPrice invPrice type unit"
-      );
+      .populate("item", "name description price type unit");
 
     if (!salesOrder) {
       return res.status(404).send({
@@ -138,6 +135,7 @@ export const getSalesOrderById = async (req, res) => {
 export const getAllSalesOrders = async (req, res) => {
   const { archived } = req.query; // Check if archived filter is passed
   const filter = { archived: false };
+  if (archived === "false") filter = {};
   if (archived === "true") filter.archived = true;
   //if (archived === "false") filter.archived = false;
   try {
