@@ -11,7 +11,7 @@ import fs from "fs";
 
 import connectToDb from "./database/1_0_0/mongodb.1_0_0.db.js";
 import { customerRouter } from "./routes/1_0_0/customer.1_0_0.routes.js";
-import { itemRouter } from "./routes/item.muuSHakaH.routes.js";
+import { itemRouter } from "./routes/1_0_0/item.1_0_0.routes.js";
 import { errorHandler } from "./middleware/1_0_0/errorHandler.1_0_0.mw.js";
 import { clientRouter } from "./routes/client.muuSHakaH.routes.js";
 import { salesOrderRouter } from "./routes/1_0_0/salesorder.1_0_0.routes.js";
