@@ -165,10 +165,11 @@ const purchaseOrderSchema1C1I = new Schema(
           "Received",
           "Invoiced",
           "AdminMode",
+          "AnyMode",
           "Cancelled",
         ],
         message:
-          "{VALUE} is not a valid status . Use  Case-sensitive among these only'DRAFT','CANCELLED','CONFIRMED','SHIPPED'.'DELIVERED','DELIVERED' or 'ADMINMODE'.",
+          "{VALUE} is not a valid status . Use  Case-sensitive among these only'DRAFT','CANCELLED','CONFIRMED','SHIPPED'.'DELIVERED','DELIVERED' or 'ADMINMODE','AnyMode'.",
       },
       default: "Draft",
     },
@@ -393,6 +394,34 @@ purchaseOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       update.netAR = netAR;
     }
 
+    // Handle status reversion to Draft on modifications
+    const fieldsBeingUpdated = [
+      "orderType",
+      "vendor",
+      "item",
+      "purchaseAddress",
+      "advance",
+      "quantity",
+      "price",
+      "currency",
+      "discount",
+      "charges",
+      "tax",
+      "withholdingTax",
+      "settlementStatus",
+      "archived",
+      "createdBy",
+      "updatedBy",
+      "active",
+      "files",
+    ];
+
+    const isModifying = fieldsBeingUpdated.some((field) => field in update);
+
+    if (isModifying) {
+      // Set status back to Draft
+      update.status = "Draft";
+    }
     next();
   } catch (error) {
     next(error); // Pass error to the next middleware/controller

@@ -1,5 +1,6 @@
 import expressPO from "express";
 import {
+  changePurchaseOrderStatus,
   createPurchaseOrder,
   deleteAllPurchaseOrders,
   deletePurchaseOrderById,
@@ -15,6 +16,10 @@ purchaseOrderRouter.get("/", getAllPurchaseOrders);
 purchaseOrderRouter.get("/:purchaseOrderId", getPurchaseOrderById);
 purchaseOrderRouter.put("/:purchaseOrderId", updatePurchaseOrderById);
 purchaseOrderRouter.delete("/:purchaseOrderId", deletePurchaseOrderById);
+purchaseOrderRouter.patch(
+  "/:purchaseOrderId/status",
+  changePurchaseOrderStatus
+);
 purchaseOrderRouter.delete("/", deleteAllPurchaseOrders);
 // // Upload files for an item
 // itemRouter.post(

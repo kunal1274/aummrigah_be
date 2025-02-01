@@ -5,6 +5,29 @@ import { logError } from "../../utility/1_0_0/logError.1_0_0.utils.js";
 import { VendorModel } from "../../models/1_0_0/vendor.1_0_0.model.js";
 import { ItemModel } from "../../models/1_0_0/item.1_0_0.model.js";
 
+const isValidStatusTransition = (currentStatus, newStatus) => {
+  const STATUS_TRANSITIONS = {
+    Draft: ["Confirmed", "Cancelled", "AdminMode", "AnyMode"],
+    Confirmed: ["Shipped", "Cancelled", "AdminMode", "AnyMode"],
+    Shipped: ["Delivered", "Cancelled", "AdminMode", "AnyMode"],
+    Delivered: ["Invoiced", "AdminMode", "AnyMode"],
+    Invoiced: ["AdminMode", "AnyMode"],
+    Cancelled: ["AdminMode", "AnyMode"],
+    AdminMode: ["Draft", "AnyMode"],
+    AnyMode: [
+      "Draft",
+      "Confirmed",
+      "Shipped",
+      "Delivered",
+      "Invoiced",
+      "Cancelled",
+      "AdminMode",
+    ],
+  };
+
+  return STATUS_TRANSITIONS[currentStatus]?.includes(newStatus);
+};
+
 export const createPurchaseOrder = async (req, res) => {
   const purchaseOrderBody = req.body;
 
@@ -274,5 +297,38 @@ export const deleteAllPurchaseOrders = async (req, res) => {
       message: "Error deleting all purchase orders.",
       error: error.message,
     });
+  }
+};
+
+export const changePurchaseOrderStatus = async (req, res) => {
+  try {
+    const { purchaseOrderId } = req.params;
+    const { newStatus } = req.body;
+
+    if (!newStatus) {
+      return res.status(400).json({ error: "New status is required" });
+    }
+
+    const order = await PurchaseOrderModel.findById(purchaseOrderId);
+    if (!order) {
+      return res.status(404).json({ error: "Sales Order not found" });
+    }
+
+    // Validate status transition
+    if (!isValidStatusTransition(order.status, newStatus)) {
+      return res.status(400).json({
+        error: `Invalid status transition from ${order.status} to ${newStatus}`,
+      });
+    }
+
+    // Update status
+    order.status = newStatus;
+    // Optionally update 'updatedBy' field
+    order.updatedBy = req.user?.username || "Unknown"; // Assuming you have user info in req
+    await order.save();
+
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 };

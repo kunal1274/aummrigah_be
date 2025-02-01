@@ -1,6 +1,26 @@
 import mongoose, { Schema, model } from "mongoose";
 import { SalesOrderCounterModel } from "./counter.1_0_0.model.js";
 
+// Define allowed status transitions
+const STATUS_TRANSITIONS = {
+  Draft: ["Confirmed", "Cancelled", "AdminMode", "AnyMode"],
+  Confirmed: ["Shipped", "Cancelled", "AdminMode", "AnyMode"],
+  Shipped: ["Delivered", "Cancelled", "AdminMode", "AnyMode"],
+  Delivered: ["Invoiced", "AdminMode", "AnyMode"],
+  Invoiced: ["AdminMode", "AnyMode"],
+  Cancelled: ["AdminMode", "AnyMode"],
+  AdminMode: ["Draft", "AnyMode"],
+  AnyMode: [
+    "Draft",
+    "Confirmed",
+    "Shipped",
+    "Delivered",
+    "Invoiced",
+    "Cancelled",
+    "AdminMode",
+  ],
+};
+
 // Sales Order Schema
 const salesOrderSchema1C1I = new Schema(
   {
@@ -164,9 +184,10 @@ const salesOrderSchema1C1I = new Schema(
           "Invoiced",
           "Cancelled",
           "AdminMode",
+          "AnyMode",
         ],
         message:
-          "{VALUE} is not a valid status . Use among these only'Draft','Cancelled','Confirmed','Shipped'.'Delivered','Invoiced','AdminMode'.",
+          "{VALUE} is not a valid status . Use among these only'Draft','Cancelled','Confirmed','Shipped'.'Delivered','Invoiced','AdminMode','AnyMode'.",
       },
       default: "Draft",
     },
@@ -388,6 +409,35 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       update.withholdingTaxAmt = withholdingTaxAmt;
       update.netAmtAfterTax = netAmtAfterTax;
       update.netAR = netAR;
+    }
+
+    // Handle status reversion to Draft on modifications
+    const fieldsBeingUpdated = [
+      "orderType",
+      "customer",
+      "item",
+      "salesAddress",
+      "advance",
+      "quantity",
+      "price",
+      "currency",
+      "discount",
+      "charges",
+      "tax",
+      "withholdingTax",
+      "settlementStatus",
+      "archived",
+      "createdBy",
+      "updatedBy",
+      "active",
+      "files",
+    ];
+
+    const isModifying = fieldsBeingUpdated.some((field) => field in update);
+
+    if (isModifying) {
+      // Set status back to Draft
+      update.status = "Draft";
     }
 
     next();

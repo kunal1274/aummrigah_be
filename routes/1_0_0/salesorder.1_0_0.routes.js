@@ -13,6 +13,7 @@ import {
   archiveSalesOrderById,
   unarchiveSalesOrderById,
   getArchivedSalesOrders,
+  changeSalesOrderStatus,
 } from "../../controllers/1_0_0/salesorder.1_0_0.controller.js";
 
 const salesOrderRouter = expressSO.Router();
@@ -28,6 +29,7 @@ salesOrderRouter.delete("/drafts", deleteDraftSalesOrders);
 salesOrderRouter.patch("/:salesOrderId", patchSalesOrderById);
 salesOrderRouter.patch("/:salesOrderId/archive", archiveSalesOrderById);
 salesOrderRouter.patch("/:salesOrderId/unarchive", unarchiveSalesOrderById);
+salesOrderRouter.patch("/:salesOrderId/status", changeSalesOrderStatus);
 
 // // Upload files for an item
 // itemRouter.post(
