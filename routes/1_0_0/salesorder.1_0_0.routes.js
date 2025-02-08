@@ -14,6 +14,7 @@ import {
   getArchivedSalesOrders,
   changeSalesOrderStatus,
   addPayment,
+  generateInvoiceForOrder,
 } from "../../controllers/1_0_0/salesorder.1_0_0.controller.js";
 
 const salesOrderRouter = expressSO.Router();
@@ -32,6 +33,12 @@ salesOrderRouter.patch("/:salesOrderId/unarchive", unarchiveSalesOrderById);
 salesOrderRouter.patch("/:salesOrderId/status", changeSalesOrderStatus);
 // Add a payment to a Sales Order
 salesOrderRouter.post("/:salesOrderId/payment", addPayment);
+
+// New endpoint to generate an invoice number
+salesOrderRouter.patch(
+  "/:salesOrderId/generate-invoice",
+  generateInvoiceForOrder
+);
 
 // // Upload files for an item
 // itemRouter.post(

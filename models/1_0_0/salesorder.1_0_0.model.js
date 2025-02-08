@@ -39,6 +39,12 @@ const salesOrderSchema1C1I = new Schema(
       },
       default: "Sales",
     },
+    invoiceNum: {
+      type: String,
+      required: false,
+      unique: true,
+      default: "NA",
+    },
     customer: {
       type: Schema.Types.ObjectId,
       ref: "Customers", // Reference to the Customer model
@@ -430,6 +436,15 @@ salesOrderSchema1C1I.pre("save", async function (next) {
     // Update settlement status based on current advance and totalPaid
     doc.updateSettlementStatus();
 
+    // if (
+    //   doc.status === "Invoiced" &&
+    //   (!doc.invoiceNum || doc.invoiceNum === "NA")
+    // ) {
+    //   console.log("Generating invoice number (pre-save)...");
+    //   doc.invoiceNum = await generateInvoiceNumber();
+    //   console.log("New invoice number generated:", doc.invoiceNum);
+    // }
+
     await doc.validate();
 
     const dbResponse = await SalesOrderCounterModel.findByIdAndUpdate(
@@ -474,6 +489,9 @@ salesOrderSchema1C1I.pre("validate", function (next) {
 
 salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
   const update = this.getUpdate();
+
+  // Extract newStatus from either update.status or update.$set.status
+  //const newStatus = update.status || (update.$set && update.$set.status);
 
   try {
     // Validate existence of the customer
@@ -546,6 +564,16 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       update.netPaymentDue = netPaymentDue;
       //update.paidAmt = paidAmt;
     }
+
+    // // If the update sets status to "Invoiced", generate a new invoice number.
+    // if (newStatus === "Invoiced") {
+    //   console.log("Generating invoice number (findOneAndUpdate)...");
+    //   if (update.$set) {
+    //     update.$set.invoiceNum = await generateInvoiceNumber();
+    //   } else {
+    //     update.invoiceNum = await generateInvoiceNumber();
+    //   }
+    // }
 
     // Handle status reversion to Draft on modifications
     const fieldsBeingUpdated = [

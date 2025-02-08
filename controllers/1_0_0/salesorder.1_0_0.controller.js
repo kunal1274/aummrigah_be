@@ -35,6 +35,28 @@ const isValidStatusTransition = (currentStatus, newStatus) => {
   return STATUS_TRANSITIONS[currentStatus]?.includes(newStatus);
 };
 
+// Helper function to generate an invoice number (same as your existing implementation)
+async function generateInvoiceNumber() {
+  const counter = await SalesOrderCounterModel.findByIdAndUpdate(
+    { _id: "invoiceNumber" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  const seqNumber = counter.seq.toString().padStart(6, "0");
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  let financialYear;
+  if (month >= 4) {
+    financialYear = `${year}-${(year + 1).toString().slice(-2)}`;
+  } else {
+    financialYear = `${year - 1}-${year.toString().slice(-2)}`;
+  }
+  const monthPrefix = now.toLocaleString("en-US", { month: "short" });
+  const companyPrefix = process.env.COMPANY_PREFIX || "DEF";
+  return `${companyPrefix}/${financialYear}/${monthPrefix}/${seqNumber}`;
+}
+
 export const createSalesOrder = async (req, res) => {
   const salesOrderBody = req.body;
 
@@ -485,6 +507,46 @@ export const changeSalesOrderStatus = async (req, res) => {
     res.status(200).json(order);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+/**
+ * Controller to generate an invoice number for a given Sales Order.
+ * This endpoint updates the invoiceNum field (and optionally sets status to "Invoiced")
+ * and returns the updated order.
+ */
+export const generateInvoiceForOrder = async (req, res) => {
+  try {
+    const { salesOrderId } = req.params;
+    const order = await SalesOrderModel.findById(salesOrderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ status: "failure", message: "Sales Order not found." });
+    }
+
+    // Generate a new invoice number
+    const newInvoiceNum = await generateInvoiceNumber();
+
+    // Optionally, update the status to "Invoiced" if desired:
+    //order.status = "Invoiced";
+    order.invoiceNum = newInvoiceNum;
+
+    // Save the updated order
+    await order.save();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Invoice generated successfully.",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error generating invoice:", error);
+    return res.status(500).json({
+      status: "failure",
+      message: "Failed to generate invoice.",
+      error: error.message || error,
+    });
   }
 };
 
