@@ -433,17 +433,72 @@ export const deleteAllSalesOrders = async (req, res) => {
 
 /**
  * Add a payment to a Sales Order.
- * Expected body: { amount: Number, transactionId: String, paymentMode: String, date: Date (optional) }
+ * Expected JSON body:
+ *   {
+ *     amount: Number,
+ *     transactionId: String,
+ *     paymentMode: String,
+ *     date: Date (optional)
+ *   }
+ * Business rules:
+ *   - If the order's status is not "Invoiced", the payment is considered as an advance.
+ *     In that case, the advance field is increased by the payment amount.
+ *   - In all cases, the payment object is added to the paidAmt array.
+ *   - Settlement status is updated based on (advance + totalPaid) vs. netAR.
  */
 export const addPayment = async (req, res) => {
   try {
     const { salesOrderId } = req.params;
     const { amount, transactionId, paymentMode, date } = req.body;
+    // if (!amount || amount <= 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "A positive payment amount is required." });
+    // }
+    if (!amount) {
+      return res.status(400).json({ error: "A payment amount is required." });
+    }
+    // Retrieve the sales order
+    const order = await SalesOrderModel.findById(salesOrderId);
+    if (!order) {
+      return res.status(404).json({ error: "Sales Order not found." });
+    }
+    // // If order.status is not "Invoiced", treat payment as advance
+    // if (order.status !== "Invoiced") {
+    //   order.advance = Math.round((order.advance + amount) * 100) / 100;
+    // }
+    // Append the new payment object to paidAmt array
+    order.paidAmt.push({
+      amount,
+      transactionId,
+      paymentMode,
+      date: date || Date.now(),
+    });
+    // Update settlement status (using the document method)
+    order.updateSettlementStatus();
+    // Recalculate netAmountAfterAdvance = netAR - (advance + totalPaid)
+    const totalPaid = order.totalPaid;
+    order.netPaymentDue =
+      Math.round((order.netAR - (order.advance + totalPaid)) * 100) / 100;
+    await order.save();
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
-    if (!amount || amount <= 0) {
-      return res
-        .status(400)
-        .json({ error: "A positive payment amount is required." });
+export const addPaymentV1 = async (req, res) => {
+  try {
+    const { salesOrderId } = req.params;
+    const { amount, transactionId, paymentMode, date } = req.body;
+
+    // if (!amount || amount <= 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "A positive payment amount is required." });
+    // }
+    if (!amount) {
+      return res.status(400).json({ error: "A payment amount is required." });
     }
 
     // Push the new payment object into the paidAmt array

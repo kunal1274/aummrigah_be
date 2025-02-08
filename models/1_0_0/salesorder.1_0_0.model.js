@@ -208,6 +208,12 @@ const salesOrderSchema1C1I = new Schema(
         },
       },
     ],
+    // New field to capture any extra amount if payments exceed netAR
+    carryForwardAdvance: {
+      type: Number,
+      default: 0.0,
+      set: (v) => Math.round(v * 100) / 100,
+    },
     netPaymentDue: {
       type: Number,
       default: 0.0,
@@ -240,10 +246,11 @@ const salesOrderSchema1C1I = new Schema(
       required: true,
       enum: {
         values: [
-          "PAYMENT_PENDING",
-          "PAYMENT_PARTIAL",
-          "PAYMENT_FULL",
-          "PAYMENT_FAILED",
+          "PAYMENT_PENDING", // no advance and payment yet to be initiated
+          "PAYMENT_PARTIAL", // not considering the exisitng advance or advance is zero
+          "PAYMENT_FULL", // payment plus exisitng advance matches the net AR
+          "PAYMENT_FAILED", // payment failed
+          "PAYMENT_FULL_CARRY_FORWARD_ADVANCE", // payment current plus existing advance exceeds the net AR
         ],
         message:
           "{VALUE} is not a valid status .Use  Case-sensitive among these only'PAYMENT_PENDING','PAYMENT_PARTIAL','PAYMENT_FULL','PAYMENT_FAILED'.",
@@ -275,15 +282,65 @@ const salesOrderSchema1C1I = new Schema(
       },
     ],
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        //delete ret.__v;
+        // Sort the keys alphabetically for easier reading
+        const sorted = {};
+        Object.keys(ret)
+          .sort()
+          .forEach((key) => {
+            sorted[key] = ret[key];
+          });
+        return sorted;
+      },
+    },
+    toObject: { virtuals: true },
+  }
 );
 
 // Virtual to calculate the total paid from the paidAmt array
 salesOrderSchema1C1I.virtual("totalPaid").get(function () {
   return this.paidAmt && this.paidAmt.length
-    ? this.paidAmt.reduce((sum, payment) => sum + payment.amount, 0)
+    ? Math.round(
+        this.paidAmt.reduce((sum, payment) => sum + payment.amount, 0) * 100
+      ) / 100
     : 0;
 });
+
+// Virtual to calculate the total paid from the paidAmt array
+salesOrderSchema1C1I.virtual("combinedPaid").get(function () {
+  return (this.paidAmt && this.paidAmt.length) || this.advance
+    ? Math.round(
+        (this.advance +
+          this.paidAmt.reduce((sum, payment) => sum + payment.amount, 0)) *
+          100
+      ) / 100
+    : 0;
+});
+
+// Method: Update settlement status based on (advance + totalPaid) vs. netAR
+salesOrderSchema1C1I.methods.updateSettlementStatus = function () {
+  const totalPaid = this.totalPaid;
+  const combined = this.advance + totalPaid;
+  if (combined === this.netAR) {
+    this.settlementStatus = "PAYMENT_FULL";
+    this.carryForwardAdvance = 0;
+  } else if (combined > this.netAR) {
+    this.settlementStatus = "PAYMENT_FULL_CARRY_FORWARD_ADVANCE";
+    this.carryForwardAdvance = Math.round((combined - this.netAR) * 100) / 100;
+  } else if (combined > 0) {
+    this.settlementStatus = "PAYMENT_PARTIAL";
+    this.carryForwardAdvance = 0;
+  } else {
+    this.settlementStatus = "PAYMENT_PENDING";
+    this.carryForwardAdvance = 0;
+  }
+};
 
 // Pre-save hook to generate order number
 salesOrderSchema1C1I.pre("save", async function (next) {
@@ -365,6 +422,9 @@ salesOrderSchema1C1I.pre("save", async function (next) {
     doc.netAR = netAR;
     doc.netPaymentDue = netPaymentDue;
     //doc.paidAmt = paidAmt;
+
+    // Update settlement status based on current advance and totalPaid
+    doc.updateSettlementStatus();
 
     await doc.validate();
 
