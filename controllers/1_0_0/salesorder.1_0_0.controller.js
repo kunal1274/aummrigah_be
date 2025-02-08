@@ -432,6 +432,55 @@ export const deleteAllSalesOrders = async (req, res) => {
 };
 
 /**
+ * Add a payment to a Sales Order.
+ * Expected body: { amount: Number, transactionId: String, paymentMode: String, date: Date (optional) }
+ */
+export const addPayment = async (req, res) => {
+  try {
+    const { salesOrderId } = req.params;
+    const { amount, transactionId, paymentMode, date } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({ error: "A positive payment amount is required." });
+    }
+
+    // Push the new payment object into the paidAmt array
+    const order = await SalesOrderModel.findByIdAndUpdate(
+      salesOrderId,
+      {
+        $push: {
+          paidAmt: {
+            amount,
+            transactionId,
+            paymentMode,
+            date: date || Date.now(),
+          },
+        },
+      },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(404).json({ error: "Sales Order not found." });
+    }
+
+    // Recalculate netAmountAfterAdvance using the updated totalPaid (virtual)
+    const totalPaid = order.paidAmt.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
+    order.netPaymentDue =
+      Math.round((order.netAR - order.advance - totalPaid) * 100) / 100;
+    await order.save();
+
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
  * Change the status of a Sales Order
  */
 export const changeSalesOrderStatus = async (req, res) => {
@@ -620,6 +669,8 @@ export const validateSalesOrderStatus = async (
   //   timestamp: new Date(),
   // });
 };
+
+// Not used for now from here
 
 export const splitSalesOrder = async (originalOrderId, splitDetails) => {
   const session = await mongoose.startSession();

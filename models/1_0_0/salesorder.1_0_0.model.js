@@ -171,6 +171,50 @@ const salesOrderSchema1C1I = new Schema(
         return Math.round(v * 100) / 100;
       },
     },
+
+    // Change paidAmt from an array of numbers to an array of objects for richer metadata
+    paidAmt: [
+      {
+        amount: {
+          type: Number,
+          required: true,
+          default: 0.0,
+          set: (v) => Math.round(v * 100) / 100,
+        },
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+        transactionId: {
+          type: String,
+          required: false,
+        },
+        paymentMode: {
+          type: String,
+          required: false,
+          enum: {
+            values: [
+              "Cash",
+              "CreditCard",
+              "DebitCard",
+              "Online",
+              "UPI",
+              "Crypto",
+              "Barter",
+            ],
+            message: "{VALUE} is not a supported payment mode.",
+          },
+          default: "Cash",
+        },
+      },
+    ],
+    netPaymentDue: {
+      type: Number,
+      default: 0.0,
+      set: function (v) {
+        return Math.round(v * 100) / 100;
+      },
+    },
     status: {
       type: String,
       required: true,
@@ -233,6 +277,13 @@ const salesOrderSchema1C1I = new Schema(
   },
   { timestamps: true }
 );
+
+// Virtual to calculate the total paid from the paidAmt array
+salesOrderSchema1C1I.virtual("totalPaid").get(function () {
+  return this.paidAmt && this.paidAmt.length
+    ? this.paidAmt.reduce((sum, payment) => sum + payment.amount, 0)
+    : 0;
+});
 
 // Pre-save hook to generate order number
 salesOrderSchema1C1I.pre("save", async function (next) {
@@ -298,12 +349,22 @@ salesOrderSchema1C1I.pre("save", async function (next) {
         (doc.quantity * doc.price - discountAmt + doc.charges + taxAmount) * 100
       ) / 100;
     const netAR = Math.round((netAmtAfterTax + withholdingTaxAmt) * 100) / 100;
+    // Compute total paid using the virtual (or inline reduction)
+    // const totalPaid =
+    //   doc.paidAmt && doc.paidAmt.length
+    //     ? doc.paidAmt.reduce((sum, val) => sum + val, 0)
+    //     : 0;
+    const totalPaid = doc.totalPaid; // using the virtual field
+    const netPaymentDue =
+      Math.round((netAR - totalPaid - this.advance) * 100) / 100;
 
     doc.discountAmt = discountAmt;
     doc.taxAmount = taxAmount;
     doc.withholdingTaxAmt = withholdingTaxAmt;
     doc.netAmtAfterTax = netAmtAfterTax;
     doc.netAR = netAR;
+    doc.netPaymentDue = netPaymentDue;
+    //doc.paidAmt = paidAmt;
 
     await doc.validate();
 
@@ -376,7 +437,8 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       update.discount ||
       update.charges ||
       update.tax ||
-      update.withholdingTax
+      update.withholdingTax ||
+      update.advance
     ) {
       // Fetch the existing document to get current values if not provided in the update
       const docToUpdate = await this.model.findOne(this.getQuery());
@@ -388,6 +450,7 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       const tax = update.tax || docToUpdate.tax || 0;
       const withholdingTax =
         update.withholdingTax || docToUpdate.withholdingTax || 0;
+      const advance = update.advance || docToUpdate.advance || 0;
 
       const initialAmt = quantity * price;
       const discountAmt =
@@ -402,6 +465,13 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
         Math.round(
           (netAmtAfterTax + (withholdingTax * initialAmt) / 100) * 100
         ) / 100;
+      // Use the existing paidAmt array from the document
+      const totalPaid =
+        docToUpdate.paidAmt && docToUpdate.paidAmt.length
+          ? docToUpdate.paidAmt.reduce((sum, val) => sum + val.amount, 0)
+          : 0;
+      const netPaymentDue =
+        Math.round((netAR - totalPaid - advance) * 100) / 100;
 
       update.lineAmt = lineAmt;
       update.discountAmt = discountAmt;
@@ -409,6 +479,8 @@ salesOrderSchema1C1I.pre("findOneAndUpdate", async function (next) {
       update.withholdingTaxAmt = withholdingTaxAmt;
       update.netAmtAfterTax = netAmtAfterTax;
       update.netAR = netAR;
+      update.netPaymentDue = netPaymentDue;
+      //update.paidAmt = paidAmt;
     }
 
     // Handle status reversion to Draft on modifications
