@@ -456,7 +456,7 @@ salesOrderSchema1C1I.pre(/^find/, function (next) {
   this.populate(
     "customer",
     "code name contactNum address currency registrationNum panNum active"
-  ).populate("item", "name price type unit");
+  ).populate("item", "code name price type unit");
   next();
 });
 

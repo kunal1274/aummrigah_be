@@ -9,7 +9,6 @@ import {
   getAllSalesOrders,
   getSalesOrderById,
   updateSalesOrderById,
-  patchSalesOrderByIdWithTracking,
   archiveSalesOrderById,
   unarchiveSalesOrderById,
   getArchivedSalesOrders,

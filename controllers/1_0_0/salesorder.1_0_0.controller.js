@@ -354,41 +354,6 @@ export const deleteSalesOrderById = async (req, res) => {
   }
 };
 
-export const deleteAllSalesOrders1 = async (req, res) => {
-  try {
-    const deletedResponse = await SalesOrderModel.deleteMany({});
-
-    const resetCounter = await SalesOrderCounterModel.findOneAndUpdate(
-      { _id: "salesOrderCode" },
-      { seq: 0 }, // Reset sequence to 0
-      { new: true, upsert: true } // Create document if it doesn't exist
-    );
-
-    if (deletedResponse.deletedCount === 0) {
-      return res.status(404).send({
-        status: "failure",
-        message: "No sales orders found to delete.",
-      });
-    }
-
-    return res.status(200).send({
-      status: "success",
-      message: `${deletedResponse.deletedCount} sales orders deleted successfully.`,
-      data: {
-        deletedCount: deletedResponse.deletedCount,
-        counter: resetCounter,
-      },
-    });
-  } catch (error) {
-    logError("Delete All Sales Orders", error);
-    return res.status(500).send({
-      status: "failure",
-      message: "Error deleting all sales orders.",
-      error: error.message,
-    });
-  }
-};
-
 export const deleteAllSalesOrders = async (req, res) => {
   try {
     console.log("Starting bulk delete...");
@@ -481,54 +446,6 @@ export const addPayment = async (req, res) => {
     order.netPaymentDue =
       Math.round((order.netAR - (order.advance + totalPaid)) * 100) / 100;
     await order.save();
-    res.status(200).json(order);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const addPaymentV1 = async (req, res) => {
-  try {
-    const { salesOrderId } = req.params;
-    const { amount, transactionId, paymentMode, date } = req.body;
-
-    // if (!amount || amount <= 0) {
-    //   return res
-    //     .status(400)
-    //     .json({ error: "A positive payment amount is required." });
-    // }
-    if (!amount) {
-      return res.status(400).json({ error: "A payment amount is required." });
-    }
-
-    // Push the new payment object into the paidAmt array
-    const order = await SalesOrderModel.findByIdAndUpdate(
-      salesOrderId,
-      {
-        $push: {
-          paidAmt: {
-            amount,
-            transactionId,
-            paymentMode,
-            date: date || Date.now(),
-          },
-        },
-      },
-      { new: true }
-    );
-    if (!order) {
-      return res.status(404).json({ error: "Sales Order not found." });
-    }
-
-    // Recalculate netAmountAfterAdvance using the updated totalPaid (virtual)
-    const totalPaid = order.paidAmt.reduce(
-      (sum, payment) => sum + payment.amount,
-      0
-    );
-    order.netPaymentDue =
-      Math.round((order.netAR - order.advance - totalPaid) * 100) / 100;
-    await order.save();
-
     res.status(200).json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -726,6 +643,88 @@ export const validateSalesOrderStatus = async (
 };
 
 // Not used for now from here
+export const deleteAllSalesOrders1 = async (req, res) => {
+  try {
+    const deletedResponse = await SalesOrderModel.deleteMany({});
+
+    const resetCounter = await SalesOrderCounterModel.findOneAndUpdate(
+      { _id: "salesOrderCode" },
+      { seq: 0 }, // Reset sequence to 0
+      { new: true, upsert: true } // Create document if it doesn't exist
+    );
+
+    if (deletedResponse.deletedCount === 0) {
+      return res.status(404).send({
+        status: "failure",
+        message: "No sales orders found to delete.",
+      });
+    }
+
+    return res.status(200).send({
+      status: "success",
+      message: `${deletedResponse.deletedCount} sales orders deleted successfully.`,
+      data: {
+        deletedCount: deletedResponse.deletedCount,
+        counter: resetCounter,
+      },
+    });
+  } catch (error) {
+    logError("Delete All Sales Orders", error);
+    return res.status(500).send({
+      status: "failure",
+      message: "Error deleting all sales orders.",
+      error: error.message,
+    });
+  }
+};
+
+export const addPaymentV1 = async (req, res) => {
+  try {
+    const { salesOrderId } = req.params;
+    const { amount, transactionId, paymentMode, date } = req.body;
+
+    // if (!amount || amount <= 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "A positive payment amount is required." });
+    // }
+    if (!amount) {
+      return res.status(400).json({ error: "A payment amount is required." });
+    }
+
+    // Push the new payment object into the paidAmt array
+    const order = await SalesOrderModel.findByIdAndUpdate(
+      salesOrderId,
+      {
+        $push: {
+          paidAmt: {
+            amount,
+            transactionId,
+            paymentMode,
+            date: date || Date.now(),
+          },
+        },
+      },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(404).json({ error: "Sales Order not found." });
+    }
+
+    // Recalculate netAmountAfterAdvance using the updated totalPaid (virtual)
+    const totalPaid = order.paidAmt.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
+    order.netPaymentDue =
+      Math.round((order.netAR - order.advance - totalPaid) * 100) / 100;
+    await order.save();
+
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const splitSalesOrder = async (originalOrderId, splitDetails) => {
   const session = await mongoose.startSession();
