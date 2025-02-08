@@ -53,6 +53,10 @@ const salesOrderSchema1C1I = new Schema(
       type: String, // Adjust the type if address is more complex
       required: false, // Ensures that salesAddress is always set
     },
+    remarks: {
+      type: String, // Adjust the type if address is more complex
+      required: false, // Ensures that salesAddress is always set
+    },
     advance: {
       type: Number,
       required: true,
