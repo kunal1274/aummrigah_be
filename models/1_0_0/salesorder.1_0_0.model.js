@@ -45,6 +45,17 @@ const salesOrderSchema1C1I = new Schema(
       unique: true,
       default: "NA",
     },
+    // ***** NEW FIELDS ADDED *****
+    invoiceDate: {
+      type: Date,
+      // Not required for non‑invoiced orders;
+      // When status is Invoiced, you will validate in the controller.
+    },
+    dueDate: {
+      type: Date,
+      // This will be computed as invoiceDate + 30 days if not provided.
+    },
+    // ******************************
     customer: {
       type: Schema.Types.ObjectId,
       ref: "Customers", // Reference to the Customer model

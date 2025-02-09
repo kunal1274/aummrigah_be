@@ -54,7 +54,7 @@ async function generateInvoiceNumber() {
   }
   const monthPrefix = now.toLocaleString("en-US", { month: "short" });
   const companyPrefix = process.env.COMPANY_PREFIX || "DEF";
-  return `${companyPrefix}/${financialYear}/${monthPrefix}/${seqNumber}`;
+  return `${companyPrefix}/${financialYear}/${monthPrefix}/INV-${seqNumber}`;
 }
 
 export const createSalesOrder = async (req, res) => {
@@ -480,7 +480,7 @@ export const addPayment = async (req, res) => {
 export const changeSalesOrderStatus = async (req, res) => {
   try {
     const { salesOrderId } = req.params;
-    const { newStatus } = req.body;
+    const { newStatus, invoiceDate, dueDate } = req.body; // optionally provided
 
     if (!newStatus) {
       return res.status(400).json({ error: "New status is required" });
@@ -496,6 +496,33 @@ export const changeSalesOrderStatus = async (req, res) => {
       return res.status(400).json({
         error: `Invalid status transition from ${order.status} to ${newStatus}`,
       });
+    }
+
+    if (newStatus === "Invoiced") {
+      // Generate a new invoice number
+      const newInvoiceNum = await generateInvoiceNumber();
+
+      // Optionally, update the status to "Invoiced" if desired:
+      //order.status = "Invoiced";
+      order.invoiceNum = newInvoiceNum;
+      // If newStatus is "Invoiced", ensure invoiceDate and dueDate are set.
+      // (Even though the hooks also set defaults, you can pass these in from the request.)
+
+      // If invoiceDate is not provided, default to current date.
+      if (!invoiceDate) {
+        order.invoiceDate = new Date();
+      } else {
+        order.invoiceDate = new Date(invoiceDate);
+      }
+      // If dueDate is not provided, default to 30 days after invoiceDate.
+      if (!dueDate) {
+        const tempDate = new Date(order.invoiceDate);
+        tempDate.setDate(tempDate.getDate() + 30);
+        order.dueDate = tempDate;
+      } else {
+        order.dueDate = new Date(dueDate);
+      }
+      // The invoiceNum will be generated in the pre-save hook (or pre-findOneAndUpdate) if missing.
     }
 
     // Update status

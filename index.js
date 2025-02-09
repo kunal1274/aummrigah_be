@@ -23,6 +23,7 @@ import { bankRouter } from "./routes/bank.muuSHakaH.routes.js";
 import { taxRouter } from "./routes/tax.muuSHakaH.routes.js";
 import { allocationRouter } from "./routes/allocation.muuSHakaH.routes.js";
 import { salesOrderEventLogRouter } from "./routes/salesordereventlog.muuSHakaH.routes.js";
+import { companyRouter } from "./routes/1_0_0/company.1_0_0.routes.js";
 
 // Calculate __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -128,6 +129,7 @@ AumMrigahApp.get("/env", (req, res) => {
 
 AumMrigahApp.use("/fms/api/v0/customers", customerRouter);
 AumMrigahApp.use("/fms/api/v0/items", itemRouter);
+AumMrigahApp.use("/fms/api/v0/companies", companyRouter);
 AumMrigahApp.use("/fms/api/v0/clients", clientRouter);
 AumMrigahApp.use("/fms/api/v0/salesorders", salesOrderRouter);
 AumMrigahApp.use("/fms/api/v0/vendors", vendorRouter);
