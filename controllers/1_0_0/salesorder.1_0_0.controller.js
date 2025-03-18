@@ -209,6 +209,7 @@ export const getAllSalesOrders = async (req, res) => {
       status: "success",
       message: "Sales orders retrieved successfully.",
       count: salesOrders.length,
+      user: req.user?.email,
       data: salesOrders,
     });
   } catch (error) {

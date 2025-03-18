@@ -8,6 +8,8 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import session from "express-session";
+import passport from "passport";
 
 import connectToDb from "./database/1_0_0/mongodb.1_0_0.db.js";
 import { customerRouter } from "./routes/1_0_0/customer.1_0_0.routes.js";
@@ -24,6 +26,9 @@ import { taxRouter } from "./routes/tax.muuSHakaH.routes.js";
 import { allocationRouter } from "./routes/allocation.muuSHakaH.routes.js";
 import { salesOrderEventLogRouter } from "./routes/salesordereventlog.muuSHakaH.routes.js";
 import { companyRouter } from "./routes/1_0_0/company.1_0_0.routes.js";
+import googleAuthRouter from "./routes/1_0_0/user.1_0_0.routes.js";
+import authRouter from "./routes/1_0_0/auth.1_0_0.routes.js";
+import apiAuthRouter from "./routes/1_0_0/api-auth.1_0_0.routes.js";
 
 // Calculate __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -112,6 +117,25 @@ AumMrigahApp.listen(PORT, () => {
 
 AumMrigahApp.use(expressAumMrigah.json());
 
+// Middlewares to parse JSON and URL-encoded data
+
+AumMrigahApp.use(expressAumMrigah.urlencoded({ extended: true }));
+
+// Express session middleware
+AumMrigahApp.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_secret_key",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// Initialize Passport and restore authentication state from session
+AumMrigahApp.use(passport.initialize());
+AumMrigahApp.use(passport.session());
+
+///routes
+
 const logger = (req, res, next) => {
   console.log(`${req.method} and ${req.url} with response ${res.statusCode}`);
   next();
@@ -143,6 +167,9 @@ AumMrigahApp.use(
   "/fms/api/v0/sales-order-event-logs",
   salesOrderEventLogRouter
 );
+AumMrigahApp.use("/auth", googleAuthRouter);
+AumMrigahApp.use("/api/auth", apiAuthRouter);
+AumMrigahApp.use("/fms/api/v0/otp-auth", authRouter);
 
 // // Serve uploaded files
 // AumMrigahApp.use(
@@ -193,6 +220,17 @@ AumMrigahApp.get("/uploads/items/:filename", (req, res) => {
   //   }
   //   res.sendFile(filePath);
   // });
+});
+
+// A protected example route – only accessible if authenticated
+AumMrigahApp.get("/fms/api/v0/g-dashboard", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.send(
+      `Hello ${req.user.displayName}, welcome to your google authenticated dashboard!`
+    );
+  } else {
+    res.redirect("/auth/google");
+  }
 });
 
 // Error Handling Middleware

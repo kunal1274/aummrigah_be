@@ -148,7 +148,7 @@ const CompanySchema = new Schema(
       virtuals: true,
       transform: function (doc, ret) {
         // Remove __v if you wish
-        delete ret.__v;
+        //delete ret.__v;
         // Sort keys alphabetically for easier reading
         const sorted = {};
         Object.keys(ret)
@@ -199,8 +199,8 @@ CompanySchema.pre("save", function (next) {
  * Indexing:
  * - Unique index on companyCode and email.
  */
-CompanySchema.index({ companyCode: 1 }, { unique: true });
-CompanySchema.index({ email: 1 }, { unique: true });
+// CompanySchema.index({ companyCode: 1 });
+// CompanySchema.index({ email: 1 });
 
 export const CompanyModel =
   mongoose.models.Company || model("Company", CompanySchema);
