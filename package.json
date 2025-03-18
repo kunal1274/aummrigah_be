@@ -13,6 +13,7 @@
   "author": "RatxennextaR",
   "license": "ISC",
   "dependencies": {
+    "@mongodb-js/oidc-plugin": "^1.1.6",
     "@react-google-maps/api": "^2.20.5",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
